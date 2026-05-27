@@ -44,7 +44,18 @@ news-cli search 삼성전자 --limit 10
 news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
 news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
 news-cli detail <목록에서_본_ID>
+news-cli self upgrade
+news-cli help search
 ```
+
+`help`:
+
+- `news-cli help`: 전체 명령 요약을 출력합니다.
+- `news-cli help latest`: 최신뉴스 조회 도움말을 출력합니다.
+- `news-cli help search`: 검색과 고급 검색 옵션 도움말을 출력합니다.
+- `news-cli help url`: Google News RSS URL 생성 도움말을 출력합니다.
+- `news-cli help detail`: 캐시 기반 상세 조회 도움말을 출력합니다.
+- `news-cli help self upgrade`: 자체 업그레이드 도움말을 출력합니다.
 
 `search` 옵션:
 
@@ -55,6 +66,19 @@ news-cli detail <목록에서_본_ID>
 
 `detail`은 마지막으로 `latest` 또는 `search`를 실행할 때 저장된 로컬 캐시에서 항목을 찾아 RSS에 포함된 상세 정보를 보여줍니다.
 
+`self upgrade`는 최신 GitHub Release 바이너리와 Codex Skill을 다시 설치합니다.
+
+```sh
+news-cli self upgrade
+news-cli self upgrade --version v0.2.1
+```
+
+환경 변수:
+
+- `NEWS_CLI_BIN`: 교체할 바이너리의 정확한 경로
+- `NEWS_CLI_INSTALL_DIR`: 기본 설치 디렉터리
+- `NEWS_CLI_SKILL_DIR`: Skill 설치 디렉터리
+
 ## 배포
 
 `main` 브랜치에 푸시하면 GitHub Actions CI가 테스트와 빌드를 수행합니다.
@@ -62,7 +86,7 @@ news-cli detail <목록에서_본_ID>
 릴리스 배포는 `v*` 태그를 푸시하면 실행됩니다.
 
 ```sh
-git tag v0.2.0
+git tag v0.2.1
 git push origin main --tags
 ```
 

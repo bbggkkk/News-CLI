@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { buildLatestUrl, buildSearchQuery, buildSearchUrl } from "../src/feeds.js";
 import { parseRss, stripHtml } from "../src/xml.js";
 import { dedupeItems, normalizeItem } from "../src/news.js";
+import { buildReleaseAssetUrl, buildSkillUrl, getAssetName } from "../src/upgrade.js";
 
 test("parseRss extracts common RSS item fields", () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -90,4 +91,16 @@ test("buildSearchUrl returns Google News RSS search URL", () => {
   });
 
   assert.equal(url, "https://news.google.com/rss/search?q=%EB%B0%98%EB%8F%84%EC%B2%B4%20site%3Amk.co.kr%20%22%EC%8B%A4%EC%A0%81%20%EC%A0%84%EB%A7%9D%22%20-%EB%A3%A8%EB%A8%B8&hl=ko&gl=KR&ceid=KR%3Ako");
+});
+
+test("upgrade helpers build release asset names and urls", () => {
+  assert.equal(getAssetName("linux", "x64"), "news-cli-linux-x64");
+  assert.equal(
+    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.1"),
+    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.1/news-cli-linux-x64"
+  );
+  assert.equal(
+    buildSkillUrl("v0.2.1"),
+    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.1/skills/news-cli/SKILL.md"
+  );
 });

@@ -1,6 +1,7 @@
 import { buildSearchQuery, buildSearchUrl, createSearchFeed, feeds, getCategories } from "./feeds.js";
 import { collectNews } from "./news.js";
 import { loadItems, saveItems } from "./cache.js";
+import { selfUpgrade } from "./upgrade.js";
 
 const helpText = `news-cli
 
@@ -10,6 +11,8 @@ Usage:
   news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
   news-cli categories
   news-cli detail <id-or-url>
+  news-cli self upgrade [--version <tag>]
+  news-cli help [command]
 
 Examples:
   news-cli
@@ -18,17 +21,109 @@ Examples:
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
+  news-cli self upgrade
+  news-cli help search
 
 Google News RSS:
   Latest: https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko
   Search: https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako
 `;
 
-export async function run(argv) {
-  const { command, options, args } = parseArgs(argv);
+const commandHelp = {
+  latest: `news-cli latest
 
-  if (options.help || command === "help") {
-    console.log(helpText);
+Usage:
+  news-cli [latest] [--limit <n>]
+
+Fetches the Korean Google News latest RSS feed.
+
+Options:
+  --limit, -l <n>  Number of items to print. Default: 30
+
+Example:
+  news-cli latest --limit 20`,
+
+  search: `news-cli search
+
+Usage:
+  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
+
+Builds a Google News RSS search query and prints matching news.
+
+Options:
+  --site <domain>    Restrict results with site:<domain>.
+  --phrase <text>    Add an exact phrase wrapped in quotes.
+  --exclude <word>   Add an excluded word. Can be used multiple times.
+  --limit, -l <n>    Number of items to print. Default: 30
+
+Examples:
+  news-cli search 삼성전자 --limit 10
+  news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고`,
+
+  url: `news-cli url
+
+Usage:
+  news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
+
+Prints the generated Google News RSS query and URL without fetching it.
+
+Example:
+  news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머`,
+
+  categories: `news-cli categories
+
+Usage:
+  news-cli categories
+
+Shows the fixed Google News feed and supported modes.`,
+
+  detail: `news-cli detail
+
+Usage:
+  news-cli detail <id-or-url>
+
+Shows the cached RSS details for an item from the last latest/search command.
+
+Example:
+  news-cli detail 1a2b3c4d5e`,
+
+  "self-upgrade": `news-cli self upgrade
+
+Usage:
+  news-cli self upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
+  news-cli self-upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
+
+Downloads the latest GitHub Release binary for this OS/architecture and installs the bundled Codex skill.
+
+Options:
+  --version <tag>      Release tag to install. Default: latest
+  --install-dir <path> Install directory for news-cli. Default: current binary path, or ~/.local/bin
+  --skill-dir <path>   Codex skill directory. Default: ~/.codex/skills/news-cli
+
+Environment:
+  NEWS_CLI_BIN          Exact binary path to replace.
+  NEWS_CLI_INSTALL_DIR  Default install directory when NEWS_CLI_BIN is unset.
+  NEWS_CLI_SKILL_DIR    Default skill directory.
+
+Example:
+  news-cli self upgrade
+  news-cli self upgrade --version v0.2.1`
+};
+
+export async function run(argv) {
+  const { command, options, args, commandProvided } = parseArgs(argv);
+
+  if (command === "help") {
+    printHelp(args);
+    return;
+  }
+
+  if (options.help) {
+    if (!commandProvided) {
+      printHelp([]);
+    } else {
+      printHelp(normalizeHelpCommand(command, args));
+    }
     return;
   }
 
@@ -39,6 +134,16 @@ export async function run(argv) {
 
   if (command === "detail") {
     await printDetail(args[0]);
+    return;
+  }
+
+  if (command === "self" && args[0] === "upgrade") {
+    await runSelfUpgrade(options);
+    return;
+  }
+
+  if (command === "self-upgrade" || command === "upgrade") {
+    await runSelfUpgrade(options);
     return;
   }
 
@@ -62,6 +167,7 @@ export async function run(argv) {
 function parseArgs(argv) {
   const tokens = [...argv];
   let command = "latest";
+  let commandProvided = false;
   const args = [];
   const options = {
     category: "latest",
@@ -69,11 +175,15 @@ function parseArgs(argv) {
     help: false,
     site: "",
     phrase: "",
-    exclude: []
+    exclude: [],
+    version: "latest",
+    installDir: "",
+    skillDir: ""
   };
 
   if (tokens[0] && !tokens[0].startsWith("-")) {
     command = tokens.shift();
+    commandProvided = true;
   }
 
   while (tokens.length > 0) {
@@ -101,6 +211,18 @@ function parseArgs(argv) {
       options.exclude.push(requireValue(token, tokens.shift()));
     } else if (token.startsWith("--exclude=")) {
       options.exclude.push(token.slice("--exclude=".length));
+    } else if (token === "--version") {
+      options.version = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--version=")) {
+      options.version = token.slice("--version=".length);
+    } else if (token === "--install-dir") {
+      options.installDir = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--install-dir=")) {
+      options.installDir = token.slice("--install-dir=".length);
+    } else if (token === "--skill-dir") {
+      options.skillDir = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--skill-dir=")) {
+      options.skillDir = token.slice("--skill-dir=".length);
     } else if (token.startsWith("-")) {
       throw new Error(`Unknown option "${token}". Run "news-cli --help".`);
     } else {
@@ -108,7 +230,36 @@ function parseArgs(argv) {
     }
   }
 
-  return { command, options, args };
+  return { command, options, args, commandProvided };
+}
+
+function printHelp(topic) {
+  const args = Array.isArray(topic) ? topic : [topic].filter(Boolean);
+  if (args.length === 0) {
+    console.log(helpText);
+    return;
+  }
+
+  const key = normalizeHelpCommand(args[0], args.slice(1));
+  const text = commandHelp[key];
+  if (!text) {
+    throw new Error(`Unknown help topic "${args.join(" ")}". Run "news-cli help".`);
+  }
+
+  console.log(text);
+}
+
+function normalizeHelpCommand(command, args) {
+  if (command === "self" && args[0] === "upgrade") {
+    return "self-upgrade";
+  }
+  if (command === "upgrade") {
+    return "self-upgrade";
+  }
+  if (command === "list") {
+    return "latest";
+  }
+  return command;
 }
 
 function requireValue(option, value) {
@@ -177,6 +328,17 @@ function printUrl(args, options) {
 
   console.log(`Query: ${buildSearchQuery(searchOptions)}`);
   console.log(`URL: ${buildSearchUrl(searchOptions)}`);
+}
+
+async function runSelfUpgrade(options) {
+  const result = await selfUpgrade({
+    version: options.version,
+    installDir: options.installDir,
+    skillDir: options.skillDir
+  });
+
+  console.log(`Installed news-cli (${result.version}) to ${result.binaryPath}`);
+  console.log(`Installed Codex skill to ${result.skillPath}`);
 }
 
 function formatListItem(item) {
