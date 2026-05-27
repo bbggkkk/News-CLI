@@ -135,7 +135,7 @@ async function downloadFile(url, destination, { label, onProgress }) {
   try {
     const response = await fetch(url, {
       headers: {
-        "user-agent": "news-cli/0.2.4"
+        "user-agent": "news-cli/0.2.5"
       },
       signal: controller.signal
     });

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,6 +18,7 @@ from typing import Any
 PLUGIN_DIR = Path(__file__).resolve().parent
 TOOLSET = "news"
 TIMEOUT_SECONDS = 60
+SLASH_READ_COMMANDS = {"latest", "search", "dart", "disclosure", "detail", "url", "categories", "help"}
 
 
 def _limit(value: Any, default: int = 10) -> int:
@@ -95,6 +97,31 @@ def _run_news_cli(args: list[str]) -> str:
         "exit_code": completed.returncode,
     }
     return json.dumps(result, ensure_ascii=False)
+
+
+def _run_news_cli_text(args: list[str]) -> str:
+    raw = json.loads(_run_news_cli(args))
+    if not raw.get("ok"):
+        message = raw.get("stderr") or raw.get("stdout") or raw.get("error") or "news-cli failed."
+        return f"news-cli error: {message}"
+    return raw.get("stdout") or "(no output)"
+
+
+def _slash_help() -> str:
+    return """news-cli slash command
+
+Usage:
+  /news
+  /news latest [--limit <n>]
+  /news search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
+  /news dart [--limit <n>]
+  /news detail <id-or-url>
+  /news url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
+
+Short form:
+  /news 삼성전자
+
+The short form is treated as /news search 삼성전자."""
 
 
 NEWS_LATEST_SCHEMA = {
@@ -247,6 +274,30 @@ def _handle_search_url(args, **_kwargs):
     return _run_news_cli(cli_args)
 
 
+def _handle_news_slash(raw_args: str) -> str:
+    try:
+        tokens = shlex.split(raw_args or "")
+    except ValueError as exc:
+        return f"Invalid /news arguments: {exc}"
+
+    if not tokens:
+        return _run_news_cli_text(["latest", "--limit", "10"])
+
+    command = tokens[0].lower()
+    if command in {"help", "-h", "--help"}:
+        if len(tokens) == 1:
+            return _slash_help()
+        return _run_news_cli_text(["help", *tokens[1:]])
+
+    if command == "upgrade":
+        return "Use `news-cli upgrade` in a shell. The /news slash command only supports read-only news commands."
+
+    if command in SLASH_READ_COMMANDS:
+        return _run_news_cli_text(tokens)
+
+    return _run_news_cli_text(["search", *tokens, "--limit", "10"])
+
+
 def register(ctx) -> None:
     for name, schema, handler in (
         ("news_latest", NEWS_LATEST_SCHEMA, _handle_latest),
@@ -262,3 +313,10 @@ def register(ctx) -> None:
             handler=handler,
             check_fn=_check_news_cli,
         )
+
+    ctx.register_command(
+        name="news",
+        handler=_handle_news_slash,
+        description="Fetch Google News RSS and DART disclosures with news-cli.",
+        args_hint="[latest|search|dart|detail|url|help] ...",
+    )

@@ -106,7 +106,7 @@ Downloads the latest GitHub Release binary for the current OS/architecture and i
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.4
+news-cli upgrade --version v0.2.5
 news-cli upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
 news-cli upgrade --hermes-skill-dir ~/.hermes/skills/news-cli
 ```
@@ -143,6 +143,14 @@ hermes plugins install bbggkkk/News-CLI
 hermes plugins enable news-cli
 hermes tools enable news --platform cli
 hermes gateway restart
+```
+
+Use `/news` inside a Hermes session:
+
+```sh
+/news
+/news search 삼성전자 --limit 10
+/news dart --limit 10
 ```
 
 The plugin registers:

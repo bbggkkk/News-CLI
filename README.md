@@ -48,6 +48,14 @@ hermes tools enable news --platform cli
 hermes gateway restart
 ```
 
+세션 안에서는 `/news` slash command도 사용할 수 있습니다.
+
+```sh
+/news
+/news search 삼성전자 --limit 10
+/news dart --limit 10
+```
+
 제공 tool:
 
 - `news_latest`: 한국 Google News 최신뉴스 RSS 조회
@@ -93,7 +101,7 @@ news-cli help search
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.4
+news-cli upgrade --version v0.2.5
 ```
 
 업그레이드 중에는 현재 OS/아키텍처용 asset 선택, 바이너리 다운로드, 바이너리 교체,
@@ -114,7 +122,7 @@ Codex/Hermes SKILL 다운로드 및 설치 진행 상황이 출력됩니다.
 릴리스 배포는 `v*` 태그를 푸시하면 실행됩니다.
 
 ```sh
-git tag v0.2.4
+git tag v0.2.5
 git push origin main --tags
 ```
 

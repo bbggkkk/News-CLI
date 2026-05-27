@@ -37,7 +37,7 @@ Examples:
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
   news-cli upgrade
-  news-cli upgrade --version v0.2.4
+  news-cli upgrade --version v0.2.5
   news-cli help search
   news-cli help upgrade
 
@@ -157,7 +157,7 @@ Environment:
 
 Example:
   news-cli upgrade
-  news-cli upgrade --version v0.2.4`
+  news-cli upgrade --version v0.2.5`
 };
 
 export async function run(argv) {
