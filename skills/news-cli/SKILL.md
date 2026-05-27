@@ -102,32 +102,56 @@ Also works with `--help` on commands, such as `news-cli search --help`.
 
 ### `news-cli upgrade`
 
-Downloads the latest GitHub Release binary for the current OS/architecture and installs this skill.
+Downloads the latest GitHub Release binary for the current OS/architecture and installs this skill for Codex and Hermes.
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.3
+news-cli upgrade --version v0.2.4
 news-cli upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
+news-cli upgrade --hermes-skill-dir ~/.hermes/skills/news-cli
 ```
 
 Options:
 
 - `--version <tag>` installs a specific release tag. Default: latest.
 - `--install-dir <path>` writes `news-cli` into that directory.
-- `--skill-dir <path>` writes `SKILL.md` into that skill directory.
+- `--skill-dir <path>` writes `SKILL.md` into the backward-compatible Codex skill directory.
+- `--codex-skill-dir <path>` writes `SKILL.md` into the Codex skill directory.
+- `--hermes-skill-dir <path>` writes `SKILL.md` into the Hermes skill directory.
 
 Environment:
 
 - `NEWS_CLI_BIN` sets the exact binary path to replace.
 - `NEWS_CLI_INSTALL_DIR` sets the default install directory.
-- `NEWS_CLI_SKILL_DIR` sets the skill install directory.
+- `NEWS_CLI_SKILL_DIR` sets the backward-compatible Codex skill install directory.
+- `NEWS_CLI_CODEX_SKILL_DIR` sets the Codex skill install directory.
+- `NEWS_CLI_HERMES_SKILL_DIR` sets the Hermes skill install directory.
 
 What happens during upgrade:
 
 1. Selects the release asset for the current OS/architecture.
 2. Downloads the standalone binary with progress output.
 3. Replaces the installed `news-cli` binary.
-4. Downloads and installs `SKILL.md`.
+4. Downloads and installs `SKILL.md` for Codex and Hermes.
+
+### Hermes plugin
+
+Install and enable the repository as a Hermes plugin:
+
+```sh
+hermes plugins install bbggkkk/News-CLI
+hermes plugins enable news-cli
+hermes tools enable news --platform cli
+hermes gateway restart
+```
+
+The plugin registers:
+
+- `news_latest`: fetch Korean Google News latest RSS.
+- `news_search`: search Google News RSS with query, site, phrase, and exclude filters.
+- `news_dart`: fetch today's DART disclosure RSS.
+- `news_detail`: inspect a cached item by ID or URL.
+- `news_search_url`: build a Google News RSS search URL without fetching.
 
 ## Development
 
@@ -147,8 +171,8 @@ One-line install for the latest released binary and this skill:
 curl -fsSL https://raw.githubusercontent.com/bbggkkk/News-CLI/main/install.sh | bash
 ```
 
-The installer places the binary at `~/.local/bin/news-cli` by default and the skill at
-`~/.codex/skills/news-cli/SKILL.md`.
+The installer places the binary at `~/.local/bin/news-cli` by default and installs skills at
+`~/.codex/skills/news-cli/SKILL.md` and `~/.hermes/skills/news-cli/SKILL.md`.
 
 ## Release Notes
 

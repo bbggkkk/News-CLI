@@ -25,7 +25,7 @@ bun run build
 
 ## 원라인 설치
 
-최신 GitHub Release 바이너리와 Codex Skill을 함께 설치합니다.
+최신 GitHub Release 바이너리와 Codex/Hermes Skill을 함께 설치합니다.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/bbggkkk/News-CLI/main/install.sh | bash
@@ -34,7 +34,27 @@ curl -fsSL https://raw.githubusercontent.com/bbggkkk/News-CLI/main/install.sh | 
 기본 설치 위치:
 
 - 바이너리: `~/.local/bin/news-cli`
-- Skill: `~/.codex/skills/news-cli/SKILL.md`
+- Codex Skill: `~/.codex/skills/news-cli/SKILL.md`
+- Hermes Skill: `~/.hermes/skills/news-cli/SKILL.md`
+
+## Hermes 플러그인
+
+Hermes agent tool로 사용하려면 플러그인을 설치하고 활성화합니다.
+
+```sh
+hermes plugins install bbggkkk/News-CLI
+hermes plugins enable news-cli
+hermes tools enable news --platform cli
+hermes gateway restart
+```
+
+제공 tool:
+
+- `news_latest`: 한국 Google News 최신뉴스 RSS 조회
+- `news_search`: Google News RSS 키워드/사이트/정확한 문구/제외어 검색
+- `news_dart`: 오늘의 DART 공시 RSS 조회
+- `news_detail`: 이전 조회 결과의 ID 또는 URL 상세 조회
+- `news_search_url`: Google News RSS 검색 URL 생성
 
 ## 사용법
 
@@ -69,21 +89,23 @@ news-cli help search
 
 `detail`은 마지막으로 `latest` 또는 `search`를 실행할 때 저장된 로컬 캐시에서 항목을 찾아 RSS에 포함된 상세 정보를 보여줍니다.
 
-`upgrade`는 최신 GitHub Release 바이너리와 Codex Skill을 다시 설치합니다.
+`upgrade`는 최신 GitHub Release 바이너리와 Codex/Hermes Skill을 다시 설치합니다.
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.3
+news-cli upgrade --version v0.2.4
 ```
 
 업그레이드 중에는 현재 OS/아키텍처용 asset 선택, 바이너리 다운로드, 바이너리 교체,
-SKILL 다운로드 및 설치 진행 상황이 출력됩니다.
+Codex/Hermes SKILL 다운로드 및 설치 진행 상황이 출력됩니다.
 
 환경 변수:
 
 - `NEWS_CLI_BIN`: 교체할 바이너리의 정확한 경로
 - `NEWS_CLI_INSTALL_DIR`: 기본 설치 디렉터리
-- `NEWS_CLI_SKILL_DIR`: Skill 설치 디렉터리
+- `NEWS_CLI_SKILL_DIR`: 이전 호환용 Codex Skill 설치 디렉터리
+- `NEWS_CLI_CODEX_SKILL_DIR`: Codex Skill 설치 디렉터리
+- `NEWS_CLI_HERMES_SKILL_DIR`: Hermes Skill 설치 디렉터리
 
 ## 배포
 
@@ -92,7 +114,7 @@ SKILL 다운로드 및 설치 진행 상황이 출력됩니다.
 릴리스 배포는 `v*` 태그를 푸시하면 실행됩니다.
 
 ```sh
-git tag v0.2.3
+git tag v0.2.4
 git push origin main --tags
 ```
 

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { buildLatestUrl, buildSearchQuery, buildSearchUrl, selectFeeds } from "../src/feeds.js";
 import { parseRss, stripHtml } from "../src/xml.js";
 import { dedupeItems, normalizeItem } from "../src/news.js";
-import { buildReleaseAssetUrl, buildSkillUrl, getAssetName } from "../src/upgrade.js";
+import { buildReleaseAssetUrl, buildSkillUrl, getAssetName, resolveSkillDirs } from "../src/upgrade.js";
 
 test("parseRss extracts common RSS item fields", () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -104,11 +104,21 @@ test("buildSearchUrl returns Google News RSS search URL", () => {
 test("upgrade helpers build release asset names and urls", () => {
   assert.equal(getAssetName("linux", "x64"), "news-cli-linux-x64");
   assert.equal(
-    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.3"),
-    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.3/news-cli-linux-x64"
+    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.4"),
+    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.4/news-cli-linux-x64"
   );
   assert.equal(
-    buildSkillUrl("v0.2.3"),
-    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.3/skills/news-cli/SKILL.md"
+    buildSkillUrl("v0.2.4"),
+    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.4/skills/news-cli/SKILL.md"
+  );
+});
+
+test("resolveSkillDirs installs Codex and Hermes skills", () => {
+  assert.deepEqual(
+    resolveSkillDirs({
+      codexSkillDir: "/tmp/codex/news-cli",
+      hermesSkillDir: "/tmp/hermes/news-cli"
+    }),
+    ["/tmp/codex/news-cli", "/tmp/hermes/news-cli"]
   );
 });

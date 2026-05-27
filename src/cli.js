@@ -12,7 +12,7 @@ Usage:
   news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
   news-cli categories
   news-cli detail <id-or-url>
-  news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
+  news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>] [--hermes-skill-dir <path>]
   news-cli help [topic]
 
 Commands:
@@ -22,7 +22,7 @@ Commands:
   url search    Print the generated Google News RSS search URL.
   categories    Show fixed feeds and supported modes.
   detail        Show cached RSS details for a listed item.
-  upgrade       Upgrade the binary and install/update the Codex skill.
+  upgrade       Upgrade the binary and install/update Codex and Hermes skills.
   help          Show general help or command-specific help.
 
 Help topics:
@@ -37,7 +37,7 @@ Examples:
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
   news-cli upgrade
-  news-cli upgrade --version v0.2.3
+  news-cli upgrade --version v0.2.4
   news-cli help search
   news-cli help upgrade
 
@@ -51,7 +51,9 @@ DART RSS:
 Environment for upgrade:
   NEWS_CLI_BIN          Exact binary path to replace.
   NEWS_CLI_INSTALL_DIR  Default install directory when NEWS_CLI_BIN is unset.
-  NEWS_CLI_SKILL_DIR    Default skill directory.
+  NEWS_CLI_SKILL_DIR         Backward-compatible default Codex skill directory.
+  NEWS_CLI_CODEX_SKILL_DIR   Default Codex skill directory.
+  NEWS_CLI_HERMES_SKILL_DIR  Default Hermes skill directory.
 `;
 
 const commandHelp = {
@@ -129,29 +131,33 @@ Example:
   upgrade: `news-cli upgrade
 
 Usage:
-  news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
+  news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>] [--hermes-skill-dir <path>]
 
-Downloads the latest GitHub Release binary for this OS/architecture and installs the bundled Codex skill.
+Downloads the latest GitHub Release binary for this OS/architecture and installs the bundled Codex and Hermes skills.
 
 Work performed:
   1. Selects the release asset for the current OS/architecture.
   2. Downloads the standalone binary with progress output.
   3. Replaces the installed news-cli binary.
-  4. Downloads and installs the Codex SKILL.md.
+  4. Downloads and installs the Codex and Hermes SKILL.md files.
 
 Options:
-  --version <tag>      Release tag to install. Default: latest
-  --install-dir <path> Install directory for news-cli. Default: current binary path, or ~/.local/bin
-  --skill-dir <path>   Codex skill directory. Default: ~/.codex/skills/news-cli
+  --version <tag>          Release tag to install. Default: latest
+  --install-dir <path>     Install directory for news-cli. Default: current binary path, or ~/.local/bin
+  --skill-dir <path>       Backward-compatible Codex skill directory. Default: ~/.codex/skills/news-cli
+  --codex-skill-dir <path> Codex skill directory.
+  --hermes-skill-dir <path> Hermes skill directory. Default: ~/.hermes/skills/news-cli
 
 Environment:
   NEWS_CLI_BIN          Exact binary path to replace.
   NEWS_CLI_INSTALL_DIR  Default install directory when NEWS_CLI_BIN is unset.
-  NEWS_CLI_SKILL_DIR    Default skill directory.
+  NEWS_CLI_SKILL_DIR          Backward-compatible default Codex skill directory.
+  NEWS_CLI_CODEX_SKILL_DIR    Default Codex skill directory.
+  NEWS_CLI_HERMES_SKILL_DIR   Default Hermes skill directory.
 
 Example:
   news-cli upgrade
-  news-cli upgrade --version v0.2.3`
+  news-cli upgrade --version v0.2.4`
 };
 
 export async function run(argv) {
@@ -222,7 +228,9 @@ function parseArgs(argv) {
     exclude: [],
     version: "latest",
     installDir: "",
-    skillDir: ""
+    skillDir: "",
+    codexSkillDir: "",
+    hermesSkillDir: ""
   };
 
   if (tokens[0] && !tokens[0].startsWith("-")) {
@@ -267,6 +275,14 @@ function parseArgs(argv) {
       options.skillDir = requireValue(token, tokens.shift());
     } else if (token.startsWith("--skill-dir=")) {
       options.skillDir = token.slice("--skill-dir=".length);
+    } else if (token === "--codex-skill-dir") {
+      options.codexSkillDir = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--codex-skill-dir=")) {
+      options.codexSkillDir = token.slice("--codex-skill-dir=".length);
+    } else if (token === "--hermes-skill-dir") {
+      options.hermesSkillDir = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--hermes-skill-dir=")) {
+      options.hermesSkillDir = token.slice("--hermes-skill-dir=".length);
     } else if (token.startsWith("-")) {
       throw new Error(`Unknown option "${token}". Run "news-cli --help".`);
     } else {
@@ -376,11 +392,15 @@ async function runSelfUpgrade(options) {
     version: options.version,
     installDir: options.installDir,
     skillDir: options.skillDir,
+    codexSkillDir: options.codexSkillDir,
+    hermesSkillDir: options.hermesSkillDir,
     onProgress: (message) => console.error(message)
   });
 
   console.log(`Installed news-cli (${result.version}) to ${result.binaryPath}`);
-  console.log(`Installed Codex skill to ${result.skillPath}`);
+  for (const skillPath of result.skillPaths) {
+    console.log(`Installed skill to ${skillPath}`);
+  }
 }
 
 function formatListItem(item) {

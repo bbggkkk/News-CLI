@@ -4,24 +4,35 @@ import path from "node:path";
 
 const REPO = "bbggkkk/News-CLI";
 
-export async function selfUpgrade({ version = "latest", installDir, skillDir, onProgress = () => {} } = {}) {
+export async function selfUpgrade({
+  version = "latest",
+  installDir,
+  skillDir,
+  codexSkillDir,
+  hermesSkillDir,
+  onProgress = () => {}
+} = {}) {
   const asset = getAssetName();
   const binaryUrl = buildReleaseAssetUrl(asset, version);
   const skillUrl = buildSkillUrl(version);
   const binaryPath = resolveBinaryPath(installDir);
-  const resolvedSkillDir = skillDir || process.env.NEWS_CLI_SKILL_DIR || path.join(os.homedir(), ".codex", "skills", "news-cli");
+  const skillDirs = resolveSkillDirs({ skillDir, codexSkillDir, hermesSkillDir });
   const binaryDir = path.dirname(binaryPath);
   const tmpBinary = path.join(binaryDir, `.news-cli-${process.pid}.tmp`);
-  const tmpSkill = path.join(resolvedSkillDir, `.SKILL-${process.pid}.tmp`);
+  const tmpSkills = skillDirs.map((dir, index) => path.join(dir, `.SKILL-${process.pid}-${index}.tmp`));
 
   try {
     onProgress(`Target release: ${version}`);
     onProgress(`Platform asset: ${asset}`);
     onProgress(`Binary install path: ${binaryPath}`);
-    onProgress(`Skill install path: ${path.join(resolvedSkillDir, "SKILL.md")}`);
+    for (const dir of skillDirs) {
+      onProgress(`Skill install path: ${path.join(dir, "SKILL.md")}`);
+    }
 
     await fs.mkdir(binaryDir, { recursive: true });
-    await fs.mkdir(resolvedSkillDir, { recursive: true });
+    for (const dir of skillDirs) {
+      await fs.mkdir(dir, { recursive: true });
+    }
 
     onProgress(`Downloading binary: ${binaryUrl}`);
     await downloadFile(binaryUrl, tmpBinary, {
@@ -32,22 +43,25 @@ export async function selfUpgrade({ version = "latest", installDir, skillDir, on
     await fs.chmod(tmpBinary, 0o755);
     await fs.rename(tmpBinary, binaryPath);
 
-    onProgress(`Downloading skill: ${skillUrl}`);
-    await downloadFile(skillUrl, tmpSkill, {
-      label: "skill",
-      onProgress
-    });
-    onProgress("Installing skill.");
-    await fs.rename(tmpSkill, path.join(resolvedSkillDir, "SKILL.md"));
+    for (const [index, dir] of skillDirs.entries()) {
+      onProgress(`Downloading skill: ${skillUrl}`);
+      await downloadFile(skillUrl, tmpSkills[index], {
+        label: `skill ${index + 1}/${skillDirs.length}`,
+        onProgress
+      });
+      onProgress(`Installing skill to ${path.join(dir, "SKILL.md")}.`);
+      await fs.rename(tmpSkills[index], path.join(dir, "SKILL.md"));
+    }
 
     return {
       version,
       binaryPath,
-      skillPath: path.join(resolvedSkillDir, "SKILL.md")
+      skillPaths: skillDirs.map((dir) => path.join(dir, "SKILL.md")),
+      skillPath: path.join(skillDirs[0], "SKILL.md")
     };
   } finally {
     await fs.rm(tmpBinary, { force: true });
-    await fs.rm(tmpSkill, { force: true });
+    await Promise.all(tmpSkills.map((tmpSkill) => fs.rm(tmpSkill, { force: true })));
   }
 }
 
@@ -98,6 +112,21 @@ export function resolveBinaryPath(installDir) {
   return path.join(process.env.NEWS_CLI_INSTALL_DIR || path.join(os.homedir(), ".local", "bin"), "news-cli");
 }
 
+export function resolveSkillDirs({ skillDir, codexSkillDir, hermesSkillDir } = {}) {
+  const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
+  const hermesHome = process.env.HERMES_HOME || path.join(os.homedir(), ".hermes");
+  const codexDir = codexSkillDir ||
+    skillDir ||
+    process.env.NEWS_CLI_CODEX_SKILL_DIR ||
+    process.env.NEWS_CLI_SKILL_DIR ||
+    path.join(codexHome, "skills", "news-cli");
+  const hermesDir = hermesSkillDir ||
+    process.env.NEWS_CLI_HERMES_SKILL_DIR ||
+    path.join(hermesHome, "skills", "news-cli");
+
+  return [...new Set([codexDir, hermesDir].filter(Boolean).map((dir) => path.resolve(dir)))];
+}
+
 async function downloadFile(url, destination, { label, onProgress }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 120_000);
@@ -106,7 +135,7 @@ async function downloadFile(url, destination, { label, onProgress }) {
   try {
     const response = await fetch(url, {
       headers: {
-        "user-agent": "news-cli/0.2.3"
+        "user-agent": "news-cli/0.2.4"
       },
       signal: controller.signal
     });

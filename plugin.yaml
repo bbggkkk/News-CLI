@@ -1,0 +1,14 @@
+name: news-cli
+version: 0.2.4
+description: "Google News RSS and DART disclosure RSS tools backed by the Bun-built news-cli binary."
+author: bbggkkk
+kind: standalone
+platforms:
+  - linux
+  - macos
+provides_tools:
+  - news_latest
+  - news_search
+  - news_dart
+  - news_detail
+  - news_search_url
