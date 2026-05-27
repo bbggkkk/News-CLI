@@ -8,7 +8,14 @@ export const latestFeed = {
   url: buildLatestUrl()
 };
 
-export const feeds = [latestFeed];
+export const dartFeed = {
+  key: "dart",
+  category: "disclosure",
+  label: "DART today disclosures",
+  url: "https://dart.fss.or.kr/api/todayRSS.xml"
+};
+
+export const feeds = [latestFeed, dartFeed];
 
 export function buildLatestUrl() {
   return `${GOOGLE_NEWS_BASE_URL}?${DEFAULT_QUERY}`;
@@ -62,7 +69,7 @@ export function createSearchFeed(options) {
 }
 
 export function getCategories() {
-  return ["latest", "search"];
+  return ["latest", "search", "disclosure"];
 }
 
 export function selectFeeds(category) {
@@ -70,7 +77,11 @@ export function selectFeeds(category) {
     return [latestFeed];
   }
 
-  throw new Error('Only "latest" is available as a fixed feed. Use "news-cli search <query>" for Google News search RSS.');
+  if (category === "dart" || category === "disclosure" || category === dartFeed.key) {
+    return [dartFeed];
+  }
+
+  throw new Error('Available fixed feeds: latest, dart, disclosure. Use "news-cli search <query>" for Google News search RSS.');
 }
 
 function normalizeList(value) {

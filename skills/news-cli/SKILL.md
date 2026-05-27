@@ -5,13 +5,14 @@ description: Use this skill when the user wants to fetch, search, inspect, insta
 
 # news-cli
 
-`news-cli` is a Bun-built command-line Google News RSS client.
+`news-cli` is a Bun-built command-line Google News RSS and DART disclosure RSS client.
 
 RSS forms:
 
 - Latest Korean Google News: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
 - Search: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
 - Advanced search query: `(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
+- DART today disclosures: `https://dart.fss.or.kr/api/todayRSS.xml`
 
 ## Command Reference
 
@@ -25,6 +26,17 @@ news-cli latest --limit 20
 ```
 
 Use `--limit <n>` to control the number of displayed items. Each item includes an ID used by `detail`.
+
+### `news-cli dart` / `news-cli disclosure`
+
+Fetches today's DART disclosure RSS.
+
+```sh
+news-cli dart --limit 20
+news-cli disclosure --limit 20
+```
+
+Use this for Korean corporate disclosure items from DART. Each item includes an ID used by `detail`.
 
 ### `news-cli search`
 
@@ -79,6 +91,7 @@ Shows general or command-specific help.
 ```sh
 news-cli help
 news-cli help latest
+news-cli help dart
 news-cli help search
 news-cli help url
 news-cli help detail
@@ -93,7 +106,7 @@ Downloads the latest GitHub Release binary for the current OS/architecture and i
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.2
+news-cli upgrade --version v0.2.3
 news-cli upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
 ```
 

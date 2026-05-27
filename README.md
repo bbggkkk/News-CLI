@@ -1,13 +1,14 @@
 # news-cli
 
-Google News RSS를 터미널에서 조회하는 Bun 기반 CLI입니다. 최신뉴스, 키워드 검색,
-사이트 제한, 정확한 문구, 제외어 조합 검색을 지원합니다.
+Google News RSS와 DART 공시 RSS를 터미널에서 조회하는 Bun 기반 CLI입니다. 최신뉴스,
+키워드 검색, 사이트 제한, 정확한 문구, 제외어 조합 검색, 오늘의 DART 공시 조회를 지원합니다.
 
 참고한 Google News RSS 형식:
 
 - 최신뉴스: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
 - 검색: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
 - 고급 검색: `q=(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
+- DART 공시: `https://dart.fss.or.kr/api/todayRSS.xml`
 
 ## 설치 없이 실행
 
@@ -40,6 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/bbggkkk/News-CLI/main/install.sh | 
 ```sh
 news-cli
 news-cli latest --limit 20
+news-cli dart --limit 20
 news-cli search 삼성전자 --limit 10
 news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
 news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
@@ -52,6 +54,7 @@ news-cli help search
 
 - `news-cli help`: 전체 명령 요약을 출력합니다.
 - `news-cli help latest`: 최신뉴스 조회 도움말을 출력합니다.
+- `news-cli help dart`: DART 공시 조회 도움말을 출력합니다.
 - `news-cli help search`: 검색과 고급 검색 옵션 도움말을 출력합니다.
 - `news-cli help url`: Google News RSS URL 생성 도움말을 출력합니다.
 - `news-cli help detail`: 캐시 기반 상세 조회 도움말을 출력합니다.
@@ -70,7 +73,7 @@ news-cli help search
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.2
+news-cli upgrade --version v0.2.3
 ```
 
 업그레이드 중에는 현재 OS/아키텍처용 asset 선택, 바이너리 다운로드, 바이너리 교체,
@@ -89,7 +92,7 @@ SKILL 다운로드 및 설치 진행 상황이 출력됩니다.
 릴리스 배포는 `v*` 태그를 푸시하면 실행됩니다.
 
 ```sh
-git tag v0.2.2
+git tag v0.2.3
 git push origin main --tags
 ```
 

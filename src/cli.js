@@ -7,6 +7,7 @@ const helpText = `news-cli
 
 Usage:
   news-cli [latest] [--limit <n>]
+  news-cli dart [--limit <n>]
   news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
   news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
   news-cli categories
@@ -16,6 +17,7 @@ Usage:
 
 Commands:
   latest        Fetch Korean Google News latest RSS. Default command.
+  dart          Fetch DART today disclosure RSS.
   search        Fetch Google News RSS search results.
   url search    Print the generated Google News RSS search URL.
   categories    Show fixed feeds and supported modes.
@@ -24,23 +26,27 @@ Commands:
   help          Show general help or command-specific help.
 
 Help topics:
-  latest, search, url, categories, detail, upgrade
+  latest, dart, search, url, categories, detail, upgrade
 
 Examples:
   news-cli
   news-cli latest --limit 20
+  news-cli dart --limit 20
   news-cli search 삼성전자 --limit 10
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
   news-cli upgrade
-  news-cli upgrade --version v0.2.2
+  news-cli upgrade --version v0.2.3
   news-cli help search
   news-cli help upgrade
 
 Google News RSS:
   Latest: https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko
   Search: https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako
+
+DART RSS:
+  Disclosures: https://dart.fss.or.kr/api/todayRSS.xml
 
 Environment for upgrade:
   NEWS_CLI_BIN          Exact binary path to replace.
@@ -61,6 +67,20 @@ Options:
 
 Example:
   news-cli latest --limit 20`,
+
+  dart: `news-cli dart
+
+Usage:
+  news-cli dart [--limit <n>]
+  news-cli disclosure [--limit <n>]
+
+Fetches today's DART disclosure RSS feed.
+
+Options:
+  --limit, -l <n>  Number of disclosure items to print. Default: 30
+
+Example:
+  news-cli dart --limit 20`,
 
   search: `news-cli search
 
@@ -131,7 +151,7 @@ Environment:
 
 Example:
   news-cli upgrade
-  news-cli upgrade --version v0.2.2`
+  news-cli upgrade --version v0.2.3`
 };
 
 export async function run(argv) {
@@ -173,6 +193,11 @@ export async function run(argv) {
 
   if (command === "search") {
     await printSearch(args, options);
+    return;
+  }
+
+  if (command === "dart" || command === "disclosure") {
+    await printList({ ...options, category: "dart" });
     return;
   }
 
@@ -271,6 +296,9 @@ function printHelp(topic) {
 function normalizeHelpCommand(command) {
   if (command === "list") {
     return "latest";
+  }
+  if (command === "disclosure") {
+    return "dart";
   }
   return command;
 }
