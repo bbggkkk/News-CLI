@@ -82,19 +82,19 @@ news-cli help latest
 news-cli help search
 news-cli help url
 news-cli help detail
-news-cli help self upgrade
+news-cli help upgrade
 ```
 
 Also works with `--help` on commands, such as `news-cli search --help`.
 
-### `news-cli self upgrade`
+### `news-cli upgrade`
 
 Downloads the latest GitHub Release binary for the current OS/architecture and installs this skill.
 
 ```sh
-news-cli self upgrade
-news-cli self upgrade --version v0.2.1
-news-cli self-upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
+news-cli upgrade
+news-cli upgrade --version v0.2.2
+news-cli upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
 ```
 
 Options:
@@ -108,6 +108,13 @@ Environment:
 - `NEWS_CLI_BIN` sets the exact binary path to replace.
 - `NEWS_CLI_INSTALL_DIR` sets the default install directory.
 - `NEWS_CLI_SKILL_DIR` sets the skill install directory.
+
+What happens during upgrade:
+
+1. Selects the release asset for the current OS/architecture.
+2. Downloads the standalone binary with progress output.
+3. Replaces the installed `news-cli` binary.
+4. Downloads and installs `SKILL.md`.
 
 ## Development
 
@@ -133,7 +140,7 @@ The installer places the binary at `~/.local/bin/news-cli` by default and the sk
 ## Release Notes
 
 GitHub Actions publishes standalone binaries when a `v*` tag is pushed. The installer and
-`self upgrade` command expect release assets named:
+`upgrade` command expect release assets named:
 
 - `news-cli-linux-x64`
 - `news-cli-linux-arm64`

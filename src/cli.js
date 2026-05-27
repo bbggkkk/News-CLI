@@ -11,8 +11,20 @@ Usage:
   news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
   news-cli categories
   news-cli detail <id-or-url>
-  news-cli self upgrade [--version <tag>]
-  news-cli help [command]
+  news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
+  news-cli help [topic]
+
+Commands:
+  latest        Fetch Korean Google News latest RSS. Default command.
+  search        Fetch Google News RSS search results.
+  url search    Print the generated Google News RSS search URL.
+  categories    Show fixed feeds and supported modes.
+  detail        Show cached RSS details for a listed item.
+  upgrade       Upgrade the binary and install/update the Codex skill.
+  help          Show general help or command-specific help.
+
+Help topics:
+  latest, search, url, categories, detail, upgrade
 
 Examples:
   news-cli
@@ -21,12 +33,19 @@ Examples:
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
-  news-cli self upgrade
+  news-cli upgrade
+  news-cli upgrade --version v0.2.2
   news-cli help search
+  news-cli help upgrade
 
 Google News RSS:
   Latest: https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko
   Search: https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako
+
+Environment for upgrade:
+  NEWS_CLI_BIN          Exact binary path to replace.
+  NEWS_CLI_INSTALL_DIR  Default install directory when NEWS_CLI_BIN is unset.
+  NEWS_CLI_SKILL_DIR    Default skill directory.
 `;
 
 const commandHelp = {
@@ -87,13 +106,18 @@ Shows the cached RSS details for an item from the last latest/search command.
 Example:
   news-cli detail 1a2b3c4d5e`,
 
-  "self-upgrade": `news-cli self upgrade
+  upgrade: `news-cli upgrade
 
 Usage:
-  news-cli self upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
-  news-cli self-upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
+  news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>]
 
 Downloads the latest GitHub Release binary for this OS/architecture and installs the bundled Codex skill.
+
+Work performed:
+  1. Selects the release asset for the current OS/architecture.
+  2. Downloads the standalone binary with progress output.
+  3. Replaces the installed news-cli binary.
+  4. Downloads and installs the Codex SKILL.md.
 
 Options:
   --version <tag>      Release tag to install. Default: latest
@@ -106,8 +130,8 @@ Environment:
   NEWS_CLI_SKILL_DIR    Default skill directory.
 
 Example:
-  news-cli self upgrade
-  news-cli self upgrade --version v0.2.1`
+  news-cli upgrade
+  news-cli upgrade --version v0.2.2`
 };
 
 export async function run(argv) {
@@ -137,12 +161,7 @@ export async function run(argv) {
     return;
   }
 
-  if (command === "self" && args[0] === "upgrade") {
-    await runSelfUpgrade(options);
-    return;
-  }
-
-  if (command === "self-upgrade" || command === "upgrade") {
+  if (command === "upgrade") {
     await runSelfUpgrade(options);
     return;
   }
@@ -249,13 +268,7 @@ function printHelp(topic) {
   console.log(text);
 }
 
-function normalizeHelpCommand(command, args) {
-  if (command === "self" && args[0] === "upgrade") {
-    return "self-upgrade";
-  }
-  if (command === "upgrade") {
-    return "self-upgrade";
-  }
+function normalizeHelpCommand(command) {
   if (command === "list") {
     return "latest";
   }
@@ -334,7 +347,8 @@ async function runSelfUpgrade(options) {
   const result = await selfUpgrade({
     version: options.version,
     installDir: options.installDir,
-    skillDir: options.skillDir
+    skillDir: options.skillDir,
+    onProgress: (message) => console.error(message)
   });
 
   console.log(`Installed news-cli (${result.version}) to ${result.binaryPath}`);

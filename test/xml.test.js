@@ -96,11 +96,11 @@ test("buildSearchUrl returns Google News RSS search URL", () => {
 test("upgrade helpers build release asset names and urls", () => {
   assert.equal(getAssetName("linux", "x64"), "news-cli-linux-x64");
   assert.equal(
-    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.1"),
-    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.1/news-cli-linux-x64"
+    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.2"),
+    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.2/news-cli-linux-x64"
   );
   assert.equal(
-    buildSkillUrl("v0.2.1"),
-    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.1/skills/news-cli/SKILL.md"
+    buildSkillUrl("v0.2.2"),
+    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.2/skills/news-cli/SKILL.md"
   );
 });

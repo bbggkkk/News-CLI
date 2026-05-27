@@ -4,7 +4,7 @@ import path from "node:path";
 
 const REPO = "bbggkkk/News-CLI";
 
-export async function selfUpgrade({ version = "latest", installDir, skillDir } = {}) {
+export async function selfUpgrade({ version = "latest", installDir, skillDir, onProgress = () => {} } = {}) {
   const asset = getAssetName();
   const binaryUrl = buildReleaseAssetUrl(asset, version);
   const skillUrl = buildSkillUrl(version);
@@ -15,14 +15,29 @@ export async function selfUpgrade({ version = "latest", installDir, skillDir } =
   const tmpSkill = path.join(resolvedSkillDir, `.SKILL-${process.pid}.tmp`);
 
   try {
+    onProgress(`Target release: ${version}`);
+    onProgress(`Platform asset: ${asset}`);
+    onProgress(`Binary install path: ${binaryPath}`);
+    onProgress(`Skill install path: ${path.join(resolvedSkillDir, "SKILL.md")}`);
+
     await fs.mkdir(binaryDir, { recursive: true });
     await fs.mkdir(resolvedSkillDir, { recursive: true });
 
-    await downloadFile(binaryUrl, tmpBinary);
+    onProgress(`Downloading binary: ${binaryUrl}`);
+    await downloadFile(binaryUrl, tmpBinary, {
+      label: "binary",
+      onProgress
+    });
+    onProgress("Installing binary.");
     await fs.chmod(tmpBinary, 0o755);
     await fs.rename(tmpBinary, binaryPath);
 
-    await downloadFile(skillUrl, tmpSkill);
+    onProgress(`Downloading skill: ${skillUrl}`);
+    await downloadFile(skillUrl, tmpSkill, {
+      label: "skill",
+      onProgress
+    });
+    onProgress("Installing skill.");
     await fs.rename(tmpSkill, path.join(resolvedSkillDir, "SKILL.md"));
 
     return {
@@ -83,14 +98,15 @@ export function resolveBinaryPath(installDir) {
   return path.join(process.env.NEWS_CLI_INSTALL_DIR || path.join(os.homedir(), ".local", "bin"), "news-cli");
 }
 
-async function downloadFile(url, destination) {
+async function downloadFile(url, destination, { label, onProgress }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 120_000);
+  const file = await fs.open(destination, "w");
 
   try {
     const response = await fetch(url, {
       headers: {
-        "user-agent": "news-cli/0.2.1"
+        "user-agent": "news-cli/0.2.2"
       },
       signal: controller.signal
     });
@@ -99,9 +115,57 @@ async function downloadFile(url, destination) {
       throw new Error(`Failed to download ${url}: ${response.status} ${response.statusText}`);
     }
 
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    await fs.writeFile(destination, bytes);
+    const total = Number.parseInt(response.headers.get("content-length") || "0", 10);
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error(`Failed to read response body for ${url}`);
+    }
+
+    let received = 0;
+    let lastReport = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      await file.write(value);
+      received += value.byteLength;
+
+      if (received - lastReport >= 5 * 1024 * 1024 || received === total) {
+        onProgress(formatDownloadProgress(label, received, total));
+        lastReport = received;
+      }
+    }
+
+    if (received > 0 && received !== lastReport) {
+      onProgress(formatDownloadProgress(label, received, total));
+    }
   } finally {
+    await file.close();
     clearTimeout(timer);
   }
+}
+
+function formatDownloadProgress(label, received, total) {
+  if (total > 0 && received <= total) {
+    const percent = ((received / total) * 100).toFixed(1);
+    return `Downloaded ${label}: ${formatBytes(received)} / ${formatBytes(total)} (${percent}%)`;
+  }
+
+  return `Downloaded ${label}: ${formatBytes(received)}`;
+}
+
+function formatBytes(bytes) {
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }

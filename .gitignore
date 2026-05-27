@@ -1,3 +1,4 @@
 .news-cli-cache/
 dist/
 node_modules/
+.*.bun-build
