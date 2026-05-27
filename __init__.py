@@ -113,10 +113,10 @@ def _slash_help() -> str:
 Usage:
   /news
   /news latest [--limit <n>]
-  /news search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
+  /news search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--limit <n>]
   /news dart [--limit <n>]
   /news detail <id-or-url>
-  /news url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
+  /news url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>]
 
 Short form:
   /news 삼성전자
@@ -146,7 +146,7 @@ NEWS_SEARCH_SCHEMA = {
     "name": "news_search",
     "description": (
         "Search Google News RSS. Supports query, site:domain restriction, exact phrase, "
-        "and excluded words."
+        "excluded words, and date filters."
     ),
     "parameters": {
         "type": "object",
@@ -167,6 +167,14 @@ NEWS_SEARCH_SCHEMA = {
                 "type": "array",
                 "items": {"type": "string"},
                 "description": "Words to exclude. Items may include or omit the leading dash.",
+            },
+            "after": {
+                "type": "string",
+                "description": "Optional start date as YYYY-MM-DD. Adds after:YYYY-MM-DD.",
+            },
+            "before": {
+                "type": "string",
+                "description": "Optional end date as YYYY-MM-DD. Adds before:YYYY-MM-DD.",
             },
             "limit": {
                 "type": "integer",
@@ -229,6 +237,14 @@ NEWS_SEARCH_URL_SCHEMA = {
                 "items": {"type": "string"},
                 "description": "Words to exclude.",
             },
+            "after": {
+                "type": "string",
+                "description": "Optional start date as YYYY-MM-DD. Adds after:YYYY-MM-DD.",
+            },
+            "before": {
+                "type": "string",
+                "description": "Optional end date as YYYY-MM-DD. Adds before:YYYY-MM-DD.",
+            },
         },
         "required": ["query"],
         "additionalProperties": False,
@@ -250,6 +266,12 @@ def _handle_search(args, **_kwargs):
         cli_args.extend(["--phrase", phrase])
     for excluded in _list(args.get("exclude")):
         cli_args.extend(["--exclude", excluded])
+    after = _string(args.get("after"))
+    before = _string(args.get("before"))
+    if after:
+        cli_args.extend(["--after", after])
+    if before:
+        cli_args.extend(["--before", before])
     return _run_news_cli(cli_args)
 
 
@@ -271,6 +293,12 @@ def _handle_search_url(args, **_kwargs):
         cli_args.extend(["--phrase", phrase])
     for excluded in _list(args.get("exclude")):
         cli_args.extend(["--exclude", excluded])
+    after = _string(args.get("after"))
+    before = _string(args.get("before"))
+    if after:
+        cli_args.extend(["--after", after])
+    if before:
+        cli_args.extend(["--before", before])
     return _run_news_cli(cli_args)
 
 

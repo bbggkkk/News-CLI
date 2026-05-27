@@ -21,16 +21,16 @@ export function buildLatestUrl() {
   return `${GOOGLE_NEWS_BASE_URL}?${DEFAULT_QUERY}`;
 }
 
-export function buildSearchUrl({ query, site, phrase, exclude = [] } = {}) {
-  const q = buildSearchQuery({ query, site, phrase, exclude });
+export function buildSearchUrl({ query, site, phrase, exclude = [], after, before } = {}) {
+  const q = buildSearchQuery({ query, site, phrase, exclude, after, before });
   if (!q) {
-    throw new Error("Search requires at least one of query, site, phrase, or exclude.");
+    throw new Error("Search requires at least one of query, site, phrase, exclude, after, or before.");
   }
 
   return `${GOOGLE_NEWS_BASE_URL}/search?q=${encodeURIComponent(q)}&${DEFAULT_QUERY}`;
 }
 
-export function buildSearchQuery({ query, site, phrase, exclude = [] } = {}) {
+export function buildSearchQuery({ query, site, phrase, exclude = [], after, before } = {}) {
   const parts = [];
 
   if (query) {
@@ -53,6 +53,16 @@ export function buildSearchQuery({ query, site, phrase, exclude = [] } = {}) {
     if (normalizedWord) {
       parts.push(`-${normalizedWord}`);
     }
+  }
+
+  const normalizedAfter = normalizeDate(after);
+  if (normalizedAfter) {
+    parts.push(`after:${normalizedAfter}`);
+  }
+
+  const normalizedBefore = normalizeDate(before);
+  if (normalizedBefore) {
+    parts.push(`before:${normalizedBefore}`);
   }
 
   return parts.filter(Boolean).join(" ");
@@ -89,4 +99,22 @@ function normalizeList(value) {
     return [];
   }
   return Array.isArray(value) ? value : [value];
+}
+
+function normalizeDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  const normalized = String(value).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    throw new Error(`Date filters must use YYYY-MM-DD. Received "${value}".`);
+  }
+
+  const date = new Date(`${normalized}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== normalized) {
+    throw new Error(`Invalid date filter: "${value}".`);
+  }
+
+  return normalized;
 }

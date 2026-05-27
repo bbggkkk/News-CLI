@@ -84,9 +84,11 @@ test("buildSearchQuery combines Google News advanced search operators", () => {
       query: "반도체",
       site: "mk.co.kr",
       phrase: "실적 전망",
-      exclude: ["루머", "-광고"]
+      exclude: ["루머", "-광고"],
+      after: "2026-05-01",
+      before: "2026-05-28"
     }),
-    '반도체 site:mk.co.kr "실적 전망" -루머 -광고'
+    '반도체 site:mk.co.kr "실적 전망" -루머 -광고 after:2026-05-01 before:2026-05-28'
   );
 });
 
@@ -95,21 +97,30 @@ test("buildSearchUrl returns Google News RSS search URL", () => {
     query: "반도체",
     site: "mk.co.kr",
     phrase: "실적 전망",
-    exclude: "루머"
+    exclude: "루머",
+    after: "2026-05-01",
+    before: "2026-05-28"
   });
 
-  assert.equal(url, "https://news.google.com/rss/search?q=%EB%B0%98%EB%8F%84%EC%B2%B4%20site%3Amk.co.kr%20%22%EC%8B%A4%EC%A0%81%20%EC%A0%84%EB%A7%9D%22%20-%EB%A3%A8%EB%A8%B8&hl=ko&gl=KR&ceid=KR%3Ako");
+  assert.equal(url, "https://news.google.com/rss/search?q=%EB%B0%98%EB%8F%84%EC%B2%B4%20site%3Amk.co.kr%20%22%EC%8B%A4%EC%A0%81%20%EC%A0%84%EB%A7%9D%22%20-%EB%A3%A8%EB%A8%B8%20after%3A2026-05-01%20before%3A2026-05-28&hl=ko&gl=KR&ceid=KR%3Ako");
+});
+
+test("buildSearchQuery validates date filters", () => {
+  assert.throws(
+    () => buildSearchQuery({ query: "삼성전자", after: "2026-02-30" }),
+    /Invalid date filter/
+  );
 });
 
 test("upgrade helpers build release asset names and urls", () => {
   assert.equal(getAssetName("linux", "x64"), "news-cli-linux-x64");
   assert.equal(
-    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.5"),
-    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.5/news-cli-linux-x64"
+    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.6"),
+    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.6/news-cli-linux-x64"
   );
   assert.equal(
-    buildSkillUrl("v0.2.5"),
-    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.5/skills/news-cli/SKILL.md"
+    buildSkillUrl("v0.2.6"),
+    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.6/skills/news-cli/SKILL.md"
   );
 });
 

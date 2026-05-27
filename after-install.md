@@ -23,5 +23,6 @@ Inside a Hermes session, use:
 ```sh
 /news
 /news search 삼성전자 --limit 10
+/news search 삼성전자 --after 2026-05-01 --before 2026-05-28
 /news dart --limit 10
 ```

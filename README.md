@@ -8,6 +8,7 @@ Google News RSS와 DART 공시 RSS를 터미널에서 조회하는 Bun 기반 CL
 - 최신뉴스: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
 - 검색: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
 - 고급 검색: `q=(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
+- 날짜 검색: `after:YYYY-MM-DD`, `before:YYYY-MM-DD`
 - DART 공시: `https://dart.fss.or.kr/api/todayRSS.xml`
 
 ## 설치 없이 실행
@@ -62,6 +63,7 @@ hermes gateway restart
 ```sh
 /news
 /news search 삼성전자 --limit 10
+/news search 삼성전자 --after 2026-05-01 --before 2026-05-28
 /news dart --limit 10
 /news url search 삼성전자 --site mk.co.kr
 ```
@@ -69,7 +71,7 @@ hermes gateway restart
 제공 tool:
 
 - `news_latest`: 한국 Google News 최신뉴스 RSS 조회
-- `news_search`: Google News RSS 키워드/사이트/정확한 문구/제외어 검색
+- `news_search`: Google News RSS 키워드/사이트/정확한 문구/제외어/날짜 검색
 - `news_dart`: 오늘의 DART 공시 RSS 조회
 - `news_detail`: 이전 조회 결과의 ID 또는 URL 상세 조회
 - `news_search_url`: Google News RSS 검색 URL 생성
@@ -81,6 +83,7 @@ news-cli
 news-cli latest --limit 20
 news-cli dart --limit 20
 news-cli search 삼성전자 --limit 10
+news-cli search 삼성전자 --after 2026-05-01 --before 2026-05-28
 news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
 news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
 news-cli detail <목록에서_본_ID>
@@ -103,6 +106,8 @@ news-cli help search
 - `--site <domain>`: 특정 사이트 기사만 검색합니다. 예: `example.com`
 - `--phrase <text>`: 정확한 문구를 따옴표 검색으로 추가합니다.
 - `--exclude <word>`: 제외어를 추가합니다. 여러 번 사용할 수 있습니다.
+- `--after <YYYY-MM-DD>` 또는 `--from <YYYY-MM-DD>`: 검색 시작 날짜를 추가합니다.
+- `--before <YYYY-MM-DD>` 또는 `--to <YYYY-MM-DD>`: 검색 종료 날짜를 추가합니다.
 - `--limit <n>`: 출력 개수를 제한합니다.
 
 `detail`은 마지막으로 `latest` 또는 `search`를 실행할 때 저장된 로컬 캐시에서 항목을 찾아 RSS에 포함된 상세 정보를 보여줍니다.
@@ -111,7 +116,7 @@ news-cli help search
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.5
+news-cli upgrade --version v0.2.6
 ```
 
 업그레이드 중에는 현재 OS/아키텍처용 asset 선택, 바이너리 다운로드, 바이너리 교체,
@@ -166,7 +171,7 @@ hermes gateway restart
 릴리스 배포는 `v*` 태그를 푸시하면 실행됩니다.
 
 ```sh
-git tag v0.2.5
+git tag v0.2.6
 git push origin main --tags
 ```
 

@@ -8,8 +8,8 @@ const helpText = `news-cli
 Usage:
   news-cli [latest] [--limit <n>]
   news-cli dart [--limit <n>]
-  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
-  news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
+  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--limit <n>]
+  news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>]
   news-cli categories
   news-cli detail <id-or-url>
   news-cli upgrade [--version <tag>] [--install-dir <path>] [--skill-dir <path>] [--hermes-skill-dir <path>]
@@ -33,17 +33,19 @@ Examples:
   news-cli latest --limit 20
   news-cli dart --limit 20
   news-cli search 삼성전자 --limit 10
+  news-cli search 삼성전자 --after 2026-05-01 --before 2026-05-28
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
   news-cli upgrade
-  news-cli upgrade --version v0.2.5
+  news-cli upgrade --version v0.2.6
   news-cli help search
   news-cli help upgrade
 
 Google News RSS:
   Latest: https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko
   Search: https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako
+  Date search adds after:YYYY-MM-DD and before:YYYY-MM-DD to the Google News query.
 
 DART RSS:
   Disclosures: https://dart.fss.or.kr/api/todayRSS.xml
@@ -87,7 +89,7 @@ Example:
   search: `news-cli search
 
 Usage:
-  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
+  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--limit <n>]
 
 Builds a Google News RSS search query and prints matching news.
 
@@ -95,21 +97,25 @@ Options:
   --site <domain>    Restrict results with site:<domain>.
   --phrase <text>    Add an exact phrase wrapped in quotes.
   --exclude <word>   Add an excluded word. Can be used multiple times.
+  --after <date>     Add after:YYYY-MM-DD to the Google News query. Alias: --from
+  --before <date>    Add before:YYYY-MM-DD to the Google News query. Alias: --to
   --limit, -l <n>    Number of items to print. Default: 30
 
 Examples:
   news-cli search 삼성전자 --limit 10
+  news-cli search 삼성전자 --after 2026-05-01 --before 2026-05-28
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고`,
 
   url: `news-cli url
 
 Usage:
-  news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
+  news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>]
 
 Prints the generated Google News RSS query and URL without fetching it.
 
 Example:
-  news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머`,
+  news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
+  news-cli url search 삼성전자 --after 2026-05-01 --before 2026-05-28`,
 
   categories: `news-cli categories
 
@@ -157,7 +163,7 @@ Environment:
 
 Example:
   news-cli upgrade
-  news-cli upgrade --version v0.2.5`
+  news-cli upgrade --version v0.2.6`
 };
 
 export async function run(argv) {
@@ -226,6 +232,8 @@ function parseArgs(argv) {
     site: "",
     phrase: "",
     exclude: [],
+    after: "",
+    before: "",
     version: "latest",
     installDir: "",
     skillDir: "",
@@ -263,6 +271,18 @@ function parseArgs(argv) {
       options.exclude.push(requireValue(token, tokens.shift()));
     } else if (token.startsWith("--exclude=")) {
       options.exclude.push(token.slice("--exclude=".length));
+    } else if (token === "--after" || token === "--from") {
+      options.after = parseDateFilter(requireValue(token, tokens.shift()));
+    } else if (token.startsWith("--after=")) {
+      options.after = parseDateFilter(token.slice("--after=".length));
+    } else if (token.startsWith("--from=")) {
+      options.after = parseDateFilter(token.slice("--from=".length));
+    } else if (token === "--before" || token === "--to") {
+      options.before = parseDateFilter(requireValue(token, tokens.shift()));
+    } else if (token.startsWith("--before=")) {
+      options.before = parseDateFilter(token.slice("--before=".length));
+    } else if (token.startsWith("--to=")) {
+      options.before = parseDateFilter(token.slice("--to=".length));
     } else if (token === "--version") {
       options.version = requireValue(token, tokens.shift());
     } else if (token.startsWith("--version=")) {
@@ -334,6 +354,19 @@ function parseLimit(value) {
   return limit;
 }
 
+function parseDateFilter(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(`Date filters must use YYYY-MM-DD. Received "${value}".`);
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new Error(`Invalid date filter: "${value}".`);
+  }
+
+  return value;
+}
+
 async function printList(options) {
   const { items, errors } = await collectNews({ category: options.category });
   await printItems(items, errors, options.limit);
@@ -344,7 +377,9 @@ async function printSearch(args, options) {
     query: args.join(" "),
     site: options.site,
     phrase: options.phrase,
-    exclude: options.exclude
+    exclude: options.exclude,
+    after: options.after,
+    before: options.before
   });
   const { items, errors } = await collectNews({ feed });
   await printItems(items, errors, options.limit);
@@ -380,7 +415,9 @@ function printUrl(args, options) {
     query,
     site: options.site,
     phrase: options.phrase,
-    exclude: options.exclude
+    exclude: options.exclude,
+    after: options.after,
+    before: options.before
   };
 
   console.log(`Query: ${buildSearchQuery(searchOptions)}`);

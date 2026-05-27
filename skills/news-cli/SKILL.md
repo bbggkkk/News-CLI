@@ -12,6 +12,7 @@ RSS forms:
 - Latest Korean Google News: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
 - Search: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
 - Advanced search query: `(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
+- Date search operators: `after:YYYY-MM-DD`, `before:YYYY-MM-DD`
 - DART today disclosures: `https://dart.fss.or.kr/api/todayRSS.xml`
 
 ## Command Reference
@@ -44,6 +45,7 @@ Fetches Google News RSS search results.
 
 ```sh
 news-cli search 삼성전자 --limit 10
+news-cli search 삼성전자 --after 2026-05-01 --before 2026-05-28
 news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
 ```
 
@@ -52,6 +54,8 @@ Options:
 - `--site <domain>` adds `site:<domain>`.
 - `--phrase <text>` adds an exact quoted phrase.
 - `--exclude <word>` adds `-word`; repeat it for multiple exclusions.
+- `--after <YYYY-MM-DD>` / `--from <YYYY-MM-DD>` adds `after:YYYY-MM-DD`.
+- `--before <YYYY-MM-DD>` / `--to <YYYY-MM-DD>` adds `before:YYYY-MM-DD`.
 - `--limit <n>` controls output count.
 
 ### `news-cli url search`
@@ -60,6 +64,7 @@ Prints the generated query and RSS URL without fetching.
 
 ```sh
 news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
+news-cli url search 삼성전자 --after 2026-05-01 --before 2026-05-28
 ```
 
 Use this when validating a Google News RSS expression before using it for polling or automation.
@@ -106,7 +111,7 @@ Downloads the latest GitHub Release binary for the current OS/architecture and i
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.5
+news-cli upgrade --version v0.2.6
 news-cli upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
 news-cli upgrade --hermes-skill-dir ~/.hermes/skills/news-cli
 ```
@@ -177,6 +182,7 @@ Use `/news` inside a Hermes session:
 ```sh
 /news
 /news search 삼성전자 --limit 10
+/news search 삼성전자 --after 2026-05-01 --before 2026-05-28
 /news dart --limit 10
 /news url search 삼성전자 --site mk.co.kr
 ```
@@ -184,7 +190,7 @@ Use `/news` inside a Hermes session:
 The plugin registers:
 
 - `news_latest`: fetch Korean Google News latest RSS.
-- `news_search`: search Google News RSS with query, site, phrase, and exclude filters.
+- `news_search`: search Google News RSS with query, site, phrase, exclude, and date filters.
 - `news_dart`: fetch today's DART disclosure RSS.
 - `news_detail`: inspect a cached item by ID or URL.
 - `news_search_url`: build a Google News RSS search URL without fetching.
