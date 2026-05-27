@@ -41,10 +41,19 @@ curl -fsSL https://raw.githubusercontent.com/bbggkkk/News-CLI/main/install.sh | 
 
 Hermes agent tool로 사용하려면 플러그인을 설치하고 활성화합니다.
 
+처음 설치:
+
 ```sh
 hermes plugins install bbggkkk/News-CLI
 hermes plugins enable news-cli
 hermes tools enable news --platform cli
+hermes gateway restart
+```
+
+이미 설치한 플러그인을 최신 코드로 갱신:
+
+```sh
+hermes plugins update news-cli
 hermes gateway restart
 ```
 
@@ -54,6 +63,7 @@ hermes gateway restart
 /news
 /news search 삼성전자 --limit 10
 /news dart --limit 10
+/news url search 삼성전자 --site mk.co.kr
 ```
 
 제공 tool:
@@ -106,6 +116,40 @@ news-cli upgrade --version v0.2.5
 
 업그레이드 중에는 현재 OS/아키텍처용 asset 선택, 바이너리 다운로드, 바이너리 교체,
 Codex/Hermes SKILL 다운로드 및 설치 진행 상황이 출력됩니다.
+
+`news-cli upgrade`가 하는 일:
+
+- `news-cli` 바이너리 다운로드 및 교체
+- Codex Skill 갱신
+- Hermes Skill 갱신
+
+`news-cli upgrade`가 하지 않는 일:
+
+- Hermes 플러그인 설치
+- Hermes 플러그인 Git checkout 업데이트
+- Hermes 플러그인 활성화
+- Hermes toolset 활성화
+- Hermes gateway 재시작
+
+따라서 `/news` slash command까지 최신화하려면 플러그인 상태에 따라 아래 절차를 함께 실행합니다.
+
+처음 설치:
+
+```sh
+news-cli upgrade
+hermes plugins install bbggkkk/News-CLI
+hermes plugins enable news-cli
+hermes tools enable news --platform cli
+hermes gateway restart
+```
+
+이미 설치된 경우:
+
+```sh
+news-cli upgrade
+hermes plugins update news-cli
+hermes gateway restart
+```
 
 환경 변수:
 

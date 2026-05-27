@@ -134,14 +134,41 @@ What happens during upgrade:
 3. Replaces the installed `news-cli` binary.
 4. Downloads and installs `SKILL.md` for Codex and Hermes.
 
+What `news-cli upgrade` does not do:
+
+- It does not install the Hermes plugin.
+- It does not update the Hermes plugin Git checkout.
+- It does not enable the Hermes plugin.
+- It does not enable the Hermes `news` toolset.
+- It does not restart the Hermes gateway.
+
+For `/news` slash command or Hermes tool changes, update the Hermes plugin separately.
+
 ### Hermes plugin
 
 Install and enable the repository as a Hermes plugin:
+
+First install:
 
 ```sh
 hermes plugins install bbggkkk/News-CLI
 hermes plugins enable news-cli
 hermes tools enable news --platform cli
+hermes gateway restart
+```
+
+Update an existing plugin install:
+
+```sh
+hermes plugins update news-cli
+hermes gateway restart
+```
+
+Full update when both the binary/skills and Hermes plugin should be current:
+
+```sh
+news-cli upgrade
+hermes plugins update news-cli
 hermes gateway restart
 ```
 
@@ -151,6 +178,7 @@ Use `/news` inside a Hermes session:
 /news
 /news search 삼성전자 --limit 10
 /news dart --limit 10
+/news url search 삼성전자 --site mk.co.kr
 ```
 
 The plugin registers:
