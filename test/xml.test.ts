@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildLatestUrl, buildSearchQuery, buildSearchUrl, selectFeeds } from "../src/feeds.js";
-import { parseRss, stripHtml } from "../src/xml.js";
-import { dedupeItems, normalizeItem } from "../src/news.js";
-import { buildReleaseAssetUrl, buildSkillUrl, getAssetName, resolveSkillDirs } from "../src/upgrade.js";
+import { buildLatestUrl, buildSearchQuery, buildSearchUrl, selectFeeds } from "../src/feeds";
+import { parseRss, stripHtml } from "../src/xml";
+import { dedupeItems, normalizeItem } from "../src/news";
+import { buildReleaseAssetUrl, buildSkillUrl, getAssetName, resolveSkillDirs } from "../src/upgrade";
 
 test("parseRss extracts common RSS item fields", () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -33,7 +33,9 @@ test("normalizeItem adds source metadata and stable id", () => {
     link: "https://example.com/news/1",
     guid: "news-1",
     pubDate: "Wed, 27 May 2026 10:00:00 +0900",
-    description: "요약"
+    description: "요약",
+    category: "",
+    author: ""
   }, {
     key: "example",
     category: "society",
@@ -53,9 +55,9 @@ test("stripHtml decodes entities and removes tags", () => {
 
 test("dedupeItems combines categories and sources for the same story", () => {
   const items = [
-    { id: "same", category: "search", source: "google-search", title: "뉴스" },
-    { id: "same", category: "latest", source: "google-latest", title: "뉴스" },
-    { id: "other", category: "latest", source: "google-latest", title: "다른 뉴스" }
+    makeNewsItem({ id: "same", category: "search", source: "google-search", title: "뉴스" }),
+    makeNewsItem({ id: "same", category: "latest", source: "google-latest", title: "뉴스" }),
+    makeNewsItem({ id: "other", category: "latest", source: "google-latest", title: "다른 뉴스" })
   ];
 
   const deduped = dedupeItems(items);
@@ -65,6 +67,27 @@ test("dedupeItems combines categories and sources for the same story", () => {
   assert.deepEqual(deduped[0].categories, ["search", "latest"]);
   assert.equal(deduped[0].source, "google-search,google-latest");
 });
+
+function makeNewsItem(overrides = {}) {
+  return {
+    id: "",
+    guid: "",
+    title: "",
+    link: "",
+    date: "",
+    rawDate: "",
+    description: "",
+    category: "",
+    source: "",
+    sourceLabel: "",
+    feedUrl: "",
+    author: "",
+    itemCategory: "",
+    categories: [],
+    sources: [],
+    ...overrides
+  };
+}
 
 test("buildLatestUrl returns Korean Google News RSS", () => {
   assert.equal(buildLatestUrl(), "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR%3Ako");
@@ -115,12 +138,12 @@ test("buildSearchQuery validates date filters", () => {
 test("upgrade helpers build release asset names and urls", () => {
   assert.equal(getAssetName("linux", "x64"), "news-cli-linux-x64");
   assert.equal(
-    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.6"),
-    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.6/news-cli-linux-x64"
+    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.7"),
+    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.7/news-cli-linux-x64"
   );
   assert.equal(
-    buildSkillUrl("v0.2.6"),
-    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.6/skills/news-cli/SKILL.md"
+    buildSkillUrl("v0.2.7"),
+    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.7/skills/news-cli/SKILL.md"
   );
 });
 

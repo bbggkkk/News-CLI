@@ -51,7 +51,7 @@ def _base_command() -> list[str] | None:
         return [str(dist_binary)]
 
     bun = shutil.which("bun")
-    source_entry = PLUGIN_DIR / "bin" / "news-cli.js"
+    source_entry = PLUGIN_DIR / "bin" / "news-cli.ts"
     if bun and source_entry.exists():
         return [bun, "run", str(source_entry)]
 

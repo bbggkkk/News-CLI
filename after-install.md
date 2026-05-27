@@ -16,7 +16,7 @@ The plugin exposes these tools:
 - `news_detail`
 - `news_search_url`
 
-It uses `NEWS_CLI_BIN` when set, otherwise a `news-cli` binary on `PATH`, then `dist/news-cli`, then `bun run bin/news-cli.js` from this plugin checkout.
+It uses `NEWS_CLI_BIN` when set, otherwise a `news-cli` binary on `PATH`, then `dist/news-cli`, then `bun run bin/news-cli.ts` from this plugin checkout.
 
 Inside a Hermes session, use:
 

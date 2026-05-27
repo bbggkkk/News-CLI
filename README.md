@@ -14,12 +14,14 @@ Google News RSS와 DART 공시 RSS를 터미널에서 조회하는 Bun 기반 CL
 ## 설치 없이 실행
 
 ```sh
-bun run bin/news-cli.js
+bun run bin/news-cli.ts
 ```
 
 ## 빌드
 
 ```sh
+bun test
+bun run typecheck
 bun run build
 ./dist/news-cli
 ```
@@ -116,7 +118,7 @@ news-cli help search
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.6
+news-cli upgrade --version v0.2.7
 ```
 
 업그레이드 중에는 현재 OS/아키텍처용 asset 선택, 바이너리 다운로드, 바이너리 교체,
@@ -171,7 +173,7 @@ hermes gateway restart
 릴리스 배포는 `v*` 태그를 푸시하면 실행됩니다.
 
 ```sh
-git tag v0.2.6
+git tag v0.2.7
 git push origin main --tags
 ```
 

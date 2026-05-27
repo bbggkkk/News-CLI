@@ -4,6 +4,28 @@ import path from "node:path";
 
 const REPO = "bbggkkk/News-CLI";
 
+type UpgradeOptions = {
+  version?: string;
+  installDir?: string;
+  skillDir?: string;
+  codexSkillDir?: string;
+  hermesSkillDir?: string;
+  onProgress?: (message: string) => void;
+};
+
+type UpgradeResult = {
+  version: string;
+  binaryPath: string;
+  skillPaths: string[];
+  skillPath: string;
+};
+
+type ResolveSkillDirsOptions = {
+  skillDir?: string;
+  codexSkillDir?: string;
+  hermesSkillDir?: string;
+};
+
 export async function selfUpgrade({
   version = "latest",
   installDir,
@@ -11,7 +33,7 @@ export async function selfUpgrade({
   codexSkillDir,
   hermesSkillDir,
   onProgress = () => {}
-} = {}) {
+}: UpgradeOptions = {}): Promise<UpgradeResult> {
   const asset = getAssetName();
   const binaryUrl = buildReleaseAssetUrl(asset, version);
   const skillUrl = buildSkillUrl(version);
@@ -65,7 +87,7 @@ export async function selfUpgrade({
   }
 }
 
-export function buildReleaseAssetUrl(asset, version = "latest") {
+export function buildReleaseAssetUrl(asset: string, version = "latest"): string {
   if (version === "latest") {
     return `https://github.com/${REPO}/releases/latest/download/${asset}`;
   }
@@ -73,21 +95,21 @@ export function buildReleaseAssetUrl(asset, version = "latest") {
   return `https://github.com/${REPO}/releases/download/${version}/${asset}`;
 }
 
-export function buildSkillUrl(version = "latest") {
+export function buildSkillUrl(version = "latest"): string {
   const ref = version === "latest" ? "main" : version;
   return `https://raw.githubusercontent.com/${REPO}/${ref}/skills/news-cli/SKILL.md`;
 }
 
-export function getAssetName(platform = process.platform, arch = process.arch) {
-  const platformName = {
+export function getAssetName(platform = process.platform, arch = process.arch): string {
+  const platformName = ({
     linux: "linux",
     darwin: "darwin"
-  }[platform];
+  } as Record<string, string>)[platform];
 
-  const archName = {
+  const archName = ({
     x64: "x64",
     arm64: "arm64"
-  }[arch];
+  } as Record<string, string>)[arch];
 
   if (!platformName || !archName) {
     throw new Error(`Unsupported platform: ${platform}/${arch}`);
@@ -96,7 +118,7 @@ export function getAssetName(platform = process.platform, arch = process.arch) {
   return `news-cli-${platformName}-${archName}`;
 }
 
-export function resolveBinaryPath(installDir) {
+export function resolveBinaryPath(installDir?: string): string {
   if (process.env.NEWS_CLI_BIN) {
     return process.env.NEWS_CLI_BIN;
   }
@@ -112,7 +134,7 @@ export function resolveBinaryPath(installDir) {
   return path.join(process.env.NEWS_CLI_INSTALL_DIR || path.join(os.homedir(), ".local", "bin"), "news-cli");
 }
 
-export function resolveSkillDirs({ skillDir, codexSkillDir, hermesSkillDir } = {}) {
+export function resolveSkillDirs({ skillDir, codexSkillDir, hermesSkillDir }: ResolveSkillDirsOptions = {}): string[] {
   const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
   const hermesHome = process.env.HERMES_HOME || path.join(os.homedir(), ".hermes");
   const codexDir = codexSkillDir ||
@@ -127,7 +149,11 @@ export function resolveSkillDirs({ skillDir, codexSkillDir, hermesSkillDir } = {
   return [...new Set([codexDir, hermesDir].filter(Boolean).map((dir) => path.resolve(dir)))];
 }
 
-async function downloadFile(url, destination, { label, onProgress }) {
+async function downloadFile(
+  url: string,
+  destination: string,
+  { label, onProgress }: { label: string; onProgress: (message: string) => void }
+): Promise<void> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 120_000);
   const file = await fs.open(destination, "w");
@@ -135,7 +161,7 @@ async function downloadFile(url, destination, { label, onProgress }) {
   try {
     const response = await fetch(url, {
       headers: {
-        "user-agent": "news-cli/0.2.6"
+        "user-agent": "news-cli/0.2.7"
       },
       signal: controller.signal
     });
@@ -177,7 +203,7 @@ async function downloadFile(url, destination, { label, onProgress }) {
   }
 }
 
-function formatDownloadProgress(label, received, total) {
+function formatDownloadProgress(label: string, received: number, total: number): string {
   if (total > 0 && received <= total) {
     const percent = ((received / total) * 100).toFixed(1);
     return `Downloaded ${label}: ${formatBytes(received)} / ${formatBytes(total)} (${percent}%)`;
@@ -186,7 +212,7 @@ function formatDownloadProgress(label, received, total) {
   return `Downloaded ${label}: ${formatBytes(received)}`;
 }
 
-function formatBytes(bytes) {
+function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB"];
   let value = bytes;
   let unitIndex = 0;

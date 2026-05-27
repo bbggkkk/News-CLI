@@ -1,7 +1,7 @@
-import { buildSearchQuery, buildSearchUrl, createSearchFeed, feeds, getCategories } from "./feeds.js";
-import { collectNews } from "./news.js";
-import { loadItems, saveItems } from "./cache.js";
-import { selfUpgrade } from "./upgrade.js";
+import { buildSearchQuery, buildSearchUrl, createSearchFeed, feeds, getCategories } from "./feeds";
+import { collectNews, type NewsItem } from "./news";
+import { loadItems, saveItems } from "./cache";
+import { selfUpgrade } from "./upgrade";
 
 const helpText = `news-cli
 
@@ -38,7 +38,7 @@ Examples:
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
   news-cli upgrade
-  news-cli upgrade --version v0.2.6
+  news-cli upgrade --version v0.2.7
   news-cli help search
   news-cli help upgrade
 
@@ -163,10 +163,35 @@ Environment:
 
 Example:
   news-cli upgrade
-  news-cli upgrade --version v0.2.6`
+  news-cli upgrade --version v0.2.7`
 };
 
-export async function run(argv) {
+type CliOptions = {
+  category: string;
+  limit: number;
+  help: boolean;
+  site: string;
+  phrase: string;
+  exclude: string[];
+  after: string;
+  before: string;
+  version: string;
+  installDir: string;
+  skillDir: string;
+  codexSkillDir: string;
+  hermesSkillDir: string;
+};
+
+type ParsedArgs = {
+  command: string;
+  options: CliOptions;
+  args: string[];
+  commandProvided: boolean;
+};
+
+type HelpTopic = keyof typeof commandHelp;
+
+export async function run(argv: string[]): Promise<void> {
   const { command, options, args, commandProvided } = parseArgs(argv);
 
   if (command === "help") {
@@ -178,7 +203,7 @@ export async function run(argv) {
     if (!commandProvided) {
       printHelp([]);
     } else {
-      printHelp(normalizeHelpCommand(command, args));
+      printHelp(normalizeHelpCommand(command));
     }
     return;
   }
@@ -220,12 +245,12 @@ export async function run(argv) {
   await printList(options);
 }
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]): ParsedArgs {
   const tokens = [...argv];
   let command = "latest";
   let commandProvided = false;
-  const args = [];
-  const options = {
+  const args: string[] = [];
+  const options: CliOptions = {
     category: "latest",
     limit: 30,
     help: false,
@@ -242,12 +267,12 @@ function parseArgs(argv) {
   };
 
   if (tokens[0] && !tokens[0].startsWith("-")) {
-    command = tokens.shift();
+    command = tokens.shift() as string;
     commandProvided = true;
   }
 
   while (tokens.length > 0) {
-    const token = tokens.shift();
+    const token = tokens.shift() as string;
 
     if (token === "--help" || token === "-h") {
       options.help = true;
@@ -313,14 +338,14 @@ function parseArgs(argv) {
   return { command, options, args, commandProvided };
 }
 
-function printHelp(topic) {
+function printHelp(topic: string | string[]): void {
   const args = Array.isArray(topic) ? topic : [topic].filter(Boolean);
   if (args.length === 0) {
     console.log(helpText);
     return;
   }
 
-  const key = normalizeHelpCommand(args[0], args.slice(1));
+  const key = normalizeHelpCommand(args[0]);
   const text = commandHelp[key];
   if (!text) {
     throw new Error(`Unknown help topic "${args.join(" ")}". Run "news-cli help".`);
@@ -329,24 +354,24 @@ function printHelp(topic) {
   console.log(text);
 }
 
-function normalizeHelpCommand(command) {
+function normalizeHelpCommand(command: string): HelpTopic {
   if (command === "list") {
     return "latest";
   }
   if (command === "disclosure") {
     return "dart";
   }
-  return command;
+  return command as HelpTopic;
 }
 
-function requireValue(option, value) {
+function requireValue(option: string, value: string | undefined): string {
   if (!value || value.startsWith("-")) {
     throw new Error(`Option "${option}" requires a value.`);
   }
   return value;
 }
 
-function parseLimit(value) {
+function parseLimit(value: string): number {
   const limit = Number.parseInt(value, 10);
   if (!Number.isInteger(limit) || limit <= 0) {
     throw new Error(`Limit must be a positive integer. Received "${value}".`);
@@ -354,7 +379,7 @@ function parseLimit(value) {
   return limit;
 }
 
-function parseDateFilter(value) {
+function parseDateFilter(value: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new Error(`Date filters must use YYYY-MM-DD. Received "${value}".`);
   }
@@ -367,12 +392,12 @@ function parseDateFilter(value) {
   return value;
 }
 
-async function printList(options) {
+async function printList(options: CliOptions): Promise<void> {
   const { items, errors } = await collectNews({ category: options.category });
   await printItems(items, errors, options.limit);
 }
 
-async function printSearch(args, options) {
+async function printSearch(args: string[], options: CliOptions): Promise<void> {
   const feed = createSearchFeed({
     query: args.join(" "),
     site: options.site,
@@ -385,7 +410,7 @@ async function printSearch(args, options) {
   await printItems(items, errors, options.limit);
 }
 
-async function printItems(items, errors, limit) {
+async function printItems(items: NewsItem[], errors: string[], limit: number): Promise<void> {
   const visibleItems = items.slice(0, limit);
 
   await saveItems(items);
@@ -404,7 +429,7 @@ async function printItems(items, errors, limit) {
   }
 }
 
-function printUrl(args, options) {
+function printUrl(args: string[], options: CliOptions): void {
   const subcommand = args.shift();
   if (subcommand !== "search") {
     throw new Error('Only "news-cli url search ..." is supported.');
@@ -424,7 +449,7 @@ function printUrl(args, options) {
   console.log(`URL: ${buildSearchUrl(searchOptions)}`);
 }
 
-async function runSelfUpgrade(options) {
+async function runSelfUpgrade(options: CliOptions): Promise<void> {
   const result = await selfUpgrade({
     version: options.version,
     installDir: options.installDir,
@@ -440,14 +465,14 @@ async function runSelfUpgrade(options) {
   }
 }
 
-function formatListItem(item) {
+function formatListItem(item: NewsItem): string {
   const date = formatDate(item.date || item.rawDate);
   const meta = [item.id, item.category, item.source, date].filter(Boolean).join(" | ");
   const summary = item.description ? `\n  ${truncate(item.description, 160)}` : "";
   return `[${meta}]\n${item.title}${summary}\n${item.link ?? ""}\n`;
 }
 
-async function printDetail(idOrUrl) {
+async function printDetail(idOrUrl: string | undefined): Promise<void> {
   if (!idOrUrl) {
     throw new Error("detail requires an item id or URL. Run latest/search first to populate the local cache.");
   }
@@ -479,7 +504,7 @@ async function printDetail(idOrUrl) {
   ].filter((line) => line !== "").join("\n"));
 }
 
-function printCategories() {
+function printCategories(): void {
   console.log("Feeds:");
   for (const feed of feeds) {
     console.log(`  ${feed.key} (${feed.category}) - ${feed.label}`);
@@ -492,7 +517,7 @@ function printCategories() {
   }
 }
 
-function formatDate(value) {
+function formatDate(value?: string): string {
   if (!value) {
     return "";
   }
@@ -509,7 +534,7 @@ function formatDate(value) {
   }).format(date);
 }
 
-function truncate(value, maxLength) {
+function truncate(value: string, maxLength: number): string {
   const compact = value.replace(/\s+/g, " ").trim();
   if (compact.length <= maxLength) {
     return compact;

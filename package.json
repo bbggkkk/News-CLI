@@ -1,19 +1,24 @@
 {
   "name": "news-cli",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Google News and DART RSS CLI with latest news, disclosures, and advanced search.",
   "type": "module",
   "bin": {
-    "news-cli": "./bin/news-cli.js"
+    "news-cli": "./bin/news-cli.ts"
   },
   "scripts": {
-    "start": "bun run bin/news-cli.js",
-    "build": "bun build ./bin/news-cli.js --compile --outfile dist/news-cli",
-    "test": "bun test"
+    "start": "bun run bin/news-cli.ts",
+    "build": "bun build ./bin/news-cli.ts --compile --outfile dist/news-cli",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "bun": ">=1.3.0"
   },
   "packageManager": "bun@1.3.14",
+  "devDependencies": {
+    "bun-types": "^1.3.14",
+    "typescript": "^5.9.3"
+  },
   "license": "MIT"
 }

@@ -1,11 +1,21 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import type { NewsItem } from "./news";
 
 const PRIMARY_CACHE_DIR = path.join(os.homedir(), ".cache", "news-cli");
 const FALLBACK_CACHE_DIR = path.join(process.cwd(), ".news-cli-cache");
 
-export async function saveItems(items) {
+type CachePayload = {
+  savedAt: string;
+  items: NewsItem[];
+};
+
+type NodeError = Error & {
+  code?: string;
+};
+
+export async function saveItems(items: NewsItem[]): Promise<void> {
   const payload = JSON.stringify({
     savedAt: new Date().toISOString(),
     items
@@ -21,7 +31,7 @@ export async function saveItems(items) {
   }
 }
 
-export async function loadItems() {
+export async function loadItems(): Promise<CachePayload> {
   const primary = await readCache(PRIMARY_CACHE_DIR);
   if (primary) {
     return primary;
@@ -35,23 +45,24 @@ export async function loadItems() {
   return { savedAt: "", items: [] };
 }
 
-async function writeCache(cacheDir, payload) {
+async function writeCache(cacheDir: string, payload: string): Promise<void> {
   await fs.mkdir(cacheDir, { recursive: true });
   await fs.writeFile(path.join(cacheDir, "items.json"), payload);
 }
 
-async function readCache(cacheDir) {
+async function readCache(cacheDir: string): Promise<CachePayload | null> {
   try {
     const raw = await fs.readFile(path.join(cacheDir, "items.json"), "utf8");
     return JSON.parse(raw);
   } catch (error) {
-    if (error.code === "ENOENT" || canFallback(error)) {
+    const nodeError = error as NodeError;
+    if (nodeError.code === "ENOENT" || canFallback(nodeError)) {
       return null;
     }
     throw error;
   }
 }
 
-function canFallback(error) {
-  return ["EACCES", "EPERM", "EROFS", "ENOENT"].includes(error.code);
+function canFallback(error: unknown): boolean {
+  return ["EACCES", "EPERM", "EROFS", "ENOENT"].includes((error as NodeError).code ?? "");
 }

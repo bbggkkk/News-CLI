@@ -7,15 +7,25 @@ const entityMap = {
   nbsp: " "
 };
 
-export function decodeXml(value = "") {
+export type RssItem = {
+  title: string;
+  link: string;
+  guid: string;
+  pubDate: string;
+  description: string;
+  category: string;
+  author: string;
+};
+
+export function decodeXml(value = ""): string {
   return value
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
-    .replace(/&([a-zA-Z][a-zA-Z0-9]+);/g, (match, name) => entityMap[name] ?? match);
+    .replace(/&#(\d+);/g, (_: string, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_: string, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replace(/&([a-zA-Z][a-zA-Z0-9]+);/g, (match: string, name: keyof typeof entityMap) => entityMap[name] ?? match);
 }
 
-export function stripHtml(value = "") {
+export function stripHtml(value = ""): string {
   return decodeXml(value)
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n")
@@ -25,13 +35,13 @@ export function stripHtml(value = "") {
     .trim();
 }
 
-export function extractTag(block, tagName) {
+export function extractTag(block: string, tagName: string): string {
   const pattern = new RegExp(`<${tagName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagName}>`, "i");
   const match = block.match(pattern);
   return match ? decodeXml(match[1]).trim() : "";
 }
 
-export function parseRss(xml) {
+export function parseRss(xml: string): RssItem[] {
   const itemMatches = xml.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi) ?? [];
 
   return itemMatches.map((item) => {

@@ -1,10 +1,34 @@
 import crypto from "node:crypto";
-import { selectFeeds } from "./feeds.js";
-import { parseRss } from "./xml.js";
+import { selectFeeds, type Feed } from "./feeds";
+import { parseRss, type RssItem } from "./xml";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-export async function fetchFeed(feed, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+export type NewsItem = {
+  id: string;
+  guid: string;
+  title: string;
+  link: string;
+  date: string;
+  rawDate: string;
+  description: string;
+  category: string;
+  source: string;
+  sourceLabel: string;
+  feedUrl: string;
+  author: string;
+  itemCategory: string;
+  categories: string[];
+  sources: string[];
+};
+
+export type CollectNewsOptions = {
+  category?: string;
+  feed?: Feed;
+  timeoutMs?: number;
+};
+
+export async function fetchFeed(feed: Feed, { timeoutMs = DEFAULT_TIMEOUT_MS }: { timeoutMs?: number } = {}): Promise<NewsItem[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -28,7 +52,7 @@ export async function fetchFeed(feed, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   }
 }
 
-export async function collectNews({ category = "latest", feed, timeoutMs } = {}) {
+export async function collectNews({ category = "latest", feed, timeoutMs }: CollectNewsOptions = {}): Promise<{ items: NewsItem[]; errors: string[] }> {
   const selectedFeeds = feed ? [feed] : selectFeeds(category);
   const results = await Promise.allSettled(
     selectedFeeds.map(async (feed) => ({
@@ -37,14 +61,14 @@ export async function collectNews({ category = "latest", feed, timeoutMs } = {})
     }))
   );
 
-  const errors = [];
-  const items = [];
+  const errors: string[] = [];
+  const items: NewsItem[] = [];
 
   for (const result of results) {
     if (result.status === "fulfilled") {
       items.push(...result.value.items);
     } else {
-      errors.push(result.reason.message);
+      errors.push(result.reason instanceof Error ? result.reason.message : String(result.reason));
     }
   }
 
@@ -59,7 +83,7 @@ export async function collectNews({ category = "latest", feed, timeoutMs } = {})
   return { items: uniqueItems, errors };
 }
 
-export function normalizeItem(item, feed) {
+export function normalizeItem(item: RssItem, feed: Feed): NewsItem {
   const date = normalizeDate(item.pubDate);
   const sourceId = item.guid || item.link || `${feed.key}:${item.title}:${item.pubDate}`;
   const id = crypto.createHash("sha1").update(sourceId).digest("hex").slice(0, 10);
@@ -77,12 +101,14 @@ export function normalizeItem(item, feed) {
     sourceLabel: feed.label,
     feedUrl: feed.url,
     author: item.author,
-    itemCategory: item.category
+    itemCategory: item.category,
+    categories: [feed.category],
+    sources: [feed.key]
   };
 }
 
-export function dedupeItems(items) {
-  const byId = new Map();
+export function dedupeItems(items: NewsItem[]): NewsItem[] {
+  const byId = new Map<string, NewsItem>();
 
   for (const item of items) {
     const existing = byId.get(item.id);
@@ -109,7 +135,7 @@ export function dedupeItems(items) {
   return [...byId.values()];
 }
 
-export function normalizeDate(value) {
+export function normalizeDate(value?: string): string {
   if (!value) {
     return "";
   }

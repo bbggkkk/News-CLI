@@ -111,7 +111,7 @@ Downloads the latest GitHub Release binary for the current OS/architecture and i
 
 ```sh
 news-cli upgrade
-news-cli upgrade --version v0.2.6
+news-cli upgrade --version v0.2.7
 news-cli upgrade --install-dir ~/.local/bin --skill-dir ~/.codex/skills/news-cli
 news-cli upgrade --hermes-skill-dir ~/.hermes/skills/news-cli
 ```
@@ -200,8 +200,9 @@ The plugin registers:
 Run from the repository:
 
 ```sh
-bun run bin/news-cli.js --help
+bun run bin/news-cli.ts --help
 bun test
+bun run typecheck
 bun run build
 ```
 
