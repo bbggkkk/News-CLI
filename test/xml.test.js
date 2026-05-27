@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { buildLatestUrl, buildSearchQuery, buildSearchUrl } from "../src/feeds.js";
 import { parseRss, stripHtml } from "../src/xml.js";
 import { dedupeItems, normalizeItem } from "../src/news.js";
 
@@ -51,15 +52,42 @@ test("stripHtml decodes entities and removes tags", () => {
 
 test("dedupeItems combines categories and sources for the same story", () => {
   const items = [
-    { id: "same", category: "issue", source: "jtbc-issue", title: "뉴스" },
-    { id: "same", category: "society", source: "jtbc-society", title: "뉴스" },
-    { id: "other", category: "economy", source: "jtbc-economy", title: "다른 뉴스" }
+    { id: "same", category: "search", source: "google-search", title: "뉴스" },
+    { id: "same", category: "latest", source: "google-latest", title: "뉴스" },
+    { id: "other", category: "latest", source: "google-latest", title: "다른 뉴스" }
   ];
 
   const deduped = dedupeItems(items);
 
   assert.equal(deduped.length, 2);
-  assert.equal(deduped[0].category, "issue,society");
-  assert.deepEqual(deduped[0].categories, ["issue", "society"]);
-  assert.equal(deduped[0].source, "jtbc-issue,jtbc-society");
+  assert.equal(deduped[0].category, "search,latest");
+  assert.deepEqual(deduped[0].categories, ["search", "latest"]);
+  assert.equal(deduped[0].source, "google-search,google-latest");
+});
+
+test("buildLatestUrl returns Korean Google News RSS", () => {
+  assert.equal(buildLatestUrl(), "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR%3Ako");
+});
+
+test("buildSearchQuery combines Google News advanced search operators", () => {
+  assert.equal(
+    buildSearchQuery({
+      query: "반도체",
+      site: "mk.co.kr",
+      phrase: "실적 전망",
+      exclude: ["루머", "-광고"]
+    }),
+    '반도체 site:mk.co.kr "실적 전망" -루머 -광고'
+  );
+});
+
+test("buildSearchUrl returns Google News RSS search URL", () => {
+  const url = buildSearchUrl({
+    query: "반도체",
+    site: "mk.co.kr",
+    phrase: "실적 전망",
+    exclude: "루머"
+  });
+
+  assert.equal(url, "https://news.google.com/rss/search?q=%EB%B0%98%EB%8F%84%EC%B2%B4%20site%3Amk.co.kr%20%22%EC%8B%A4%EC%A0%81%20%EC%A0%84%EB%A7%9D%22%20-%EB%A3%A8%EB%A8%B8&hl=ko&gl=KR&ceid=KR%3Ako");
 });

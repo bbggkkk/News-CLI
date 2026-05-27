@@ -1,7 +1,7 @@
 {
   "name": "news-cli",
   "version": "0.1.0",
-  "description": "RSS news aggregation CLI for MBC, JTBC, and DART feeds.",
+  "description": "Google News RSS CLI with latest news and advanced search.",
   "type": "module",
   "bin": {
     "news-cli": "./bin/news-cli.js"

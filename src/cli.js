@@ -1,25 +1,27 @@
-import { getCategories, feeds } from "./feeds.js";
+import { buildSearchQuery, buildSearchUrl, createSearchFeed, feeds, getCategories } from "./feeds.js";
 import { collectNews } from "./news.js";
 import { loadItems, saveItems } from "./cache.js";
 
 const helpText = `news-cli
 
 Usage:
-  news-cli [list] [--category <name>] [--limit <n>]
+  news-cli [latest] [--limit <n>]
+  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--limit <n>]
+  news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>]
   news-cli categories
   news-cli detail <id-or-url>
 
 Examples:
   news-cli
-  news-cli list --category politics --limit 20
-  news-cli list -c jtbc-economy
+  news-cli latest --limit 20
+  news-cli search 삼성전자 --limit 10
+  news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
+  news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
 
-Categories:
-  all, ${getCategories().join(", ")}
-
-Feed keys:
-  ${feeds.map((feed) => feed.key).join(", ")}
+Google News RSS:
+  Latest: https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko
+  Search: https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako
 `;
 
 export async function run(argv) {
@@ -40,7 +42,17 @@ export async function run(argv) {
     return;
   }
 
-  if (command !== "list") {
+  if (command === "url") {
+    printUrl(args, options);
+    return;
+  }
+
+  if (command === "search") {
+    await printSearch(args, options);
+    return;
+  }
+
+  if (command !== "latest" && command !== "list") {
     throw new Error(`Unknown command "${command}". Run "news-cli --help".`);
   }
 
@@ -49,12 +61,15 @@ export async function run(argv) {
 
 function parseArgs(argv) {
   const tokens = [...argv];
-  let command = "list";
+  let command = "latest";
   const args = [];
   const options = {
-    category: "all",
+    category: "latest",
     limit: 30,
-    help: false
+    help: false,
+    site: "",
+    phrase: "",
+    exclude: []
   };
 
   if (tokens[0] && !tokens[0].startsWith("-")) {
@@ -74,6 +89,18 @@ function parseArgs(argv) {
       options.limit = parseLimit(requireValue(token, tokens.shift()));
     } else if (token.startsWith("--limit=")) {
       options.limit = parseLimit(token.slice("--limit=".length));
+    } else if (token === "--site") {
+      options.site = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--site=")) {
+      options.site = token.slice("--site=".length);
+    } else if (token === "--phrase") {
+      options.phrase = requireValue(token, tokens.shift());
+    } else if (token.startsWith("--phrase=")) {
+      options.phrase = token.slice("--phrase=".length);
+    } else if (token === "--exclude") {
+      options.exclude.push(requireValue(token, tokens.shift()));
+    } else if (token.startsWith("--exclude=")) {
+      options.exclude.push(token.slice("--exclude=".length));
     } else if (token.startsWith("-")) {
       throw new Error(`Unknown option "${token}". Run "news-cli --help".`);
     } else {
@@ -101,7 +128,22 @@ function parseLimit(value) {
 
 async function printList(options) {
   const { items, errors } = await collectNews({ category: options.category });
-  const visibleItems = items.slice(0, options.limit);
+  await printItems(items, errors, options.limit);
+}
+
+async function printSearch(args, options) {
+  const feed = createSearchFeed({
+    query: args.join(" "),
+    site: options.site,
+    phrase: options.phrase,
+    exclude: options.exclude
+  });
+  const { items, errors } = await collectNews({ feed });
+  await printItems(items, errors, options.limit);
+}
+
+async function printItems(items, errors, limit) {
+  const visibleItems = items.slice(0, limit);
 
   await saveItems(items);
 
@@ -119,6 +161,24 @@ async function printList(options) {
   }
 }
 
+function printUrl(args, options) {
+  const subcommand = args.shift();
+  if (subcommand !== "search") {
+    throw new Error('Only "news-cli url search ..." is supported.');
+  }
+
+  const query = args.join(" ");
+  const searchOptions = {
+    query,
+    site: options.site,
+    phrase: options.phrase,
+    exclude: options.exclude
+  };
+
+  console.log(`Query: ${buildSearchQuery(searchOptions)}`);
+  console.log(`URL: ${buildSearchUrl(searchOptions)}`);
+}
+
 function formatListItem(item) {
   const date = formatDate(item.date || item.rawDate);
   const meta = [item.id, item.category, item.source, date].filter(Boolean).join(" | ");
@@ -128,7 +188,7 @@ function formatListItem(item) {
 
 async function printDetail(idOrUrl) {
   if (!idOrUrl) {
-    throw new Error("detail requires an item id or URL. Run list first to populate the local cache.");
+    throw new Error("detail requires an item id or URL. Run latest/search first to populate the local cache.");
   }
 
   const cache = await loadItems();
@@ -139,7 +199,7 @@ async function printDetail(idOrUrl) {
   ));
 
   if (!item) {
-    throw new Error(`Could not find "${idOrUrl}" in the local cache. Run "news-cli list" first, then use an id from the output.`);
+    throw new Error(`Could not find "${idOrUrl}" in the local cache. Run "news-cli latest" or "news-cli search <query>" first, then use an id from the output.`);
   }
 
   console.log([
@@ -151,6 +211,7 @@ async function printDetail(idOrUrl) {
     item.date || item.rawDate ? `Date: ${formatDate(item.date || item.rawDate)}` : "",
     item.author ? `Author: ${item.author}` : "",
     item.itemCategory ? `Item category: ${item.itemCategory}` : "",
+    item.feedUrl ? `Feed: ${item.feedUrl}` : "",
     item.link ? `Link: ${item.link}` : "",
     "",
     item.description || "(No description in feed.)"
@@ -158,15 +219,15 @@ async function printDetail(idOrUrl) {
 }
 
 function printCategories() {
-  console.log("Categories:");
-  console.log(`  all`);
-  for (const category of getCategories()) {
-    console.log(`  ${category}`);
-  }
-
-  console.log("\nFeed keys:");
+  console.log("Feeds:");
   for (const feed of feeds) {
     console.log(`  ${feed.key} (${feed.category}) - ${feed.label}`);
+    console.log(`    ${feed.url}`);
+  }
+
+  console.log("\nModes:");
+  for (const category of getCategories()) {
+    console.log(`  ${category}`);
   }
 }
 

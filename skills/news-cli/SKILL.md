@@ -1,15 +1,17 @@
 ---
 name: news-cli
-description: Use this skill when the user wants to fetch, browse, filter, inspect, install, build, release, or troubleshoot the news-cli RSS aggregation CLI for MBC, JTBC, and DART feeds.
+description: Use this skill when the user wants to fetch, search, inspect, install, build, release, or troubleshoot the news-cli Google News RSS CLI.
 ---
 
 # news-cli
 
-`news-cli` is a Bun-built command-line RSS aggregator for these feeds:
+`news-cli` is a Bun-built command-line Google News RSS client.
 
-- MBC narrative news
-- JTBC flash, issue, politics, economy, society, and international RSS feeds
-- DART today disclosure RSS
+It uses these RSS forms:
+
+- Latest Korean Google News: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
+- Search: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
+- Advanced search query: `(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
 
 ## Common Commands
 
@@ -17,8 +19,10 @@ Run from the repository:
 
 ```sh
 bun run bin/news-cli.js
-bun run bin/news-cli.js list --category politics --limit 20
-bun run bin/news-cli.js categories
+bun run bin/news-cli.js latest --limit 20
+bun run bin/news-cli.js search 삼성전자 --limit 10
+bun run bin/news-cli.js search 선거 --site example.com --phrase "여론조사" --exclude 광고
+bun run bin/news-cli.js url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
 bun run bin/news-cli.js detail <id>
 ```
 

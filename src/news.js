@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { feeds, selectFeeds } from "./feeds.js";
+import { selectFeeds } from "./feeds.js";
 import { parseRss } from "./xml.js";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -28,8 +28,8 @@ export async function fetchFeed(feed, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   }
 }
 
-export async function collectNews({ category = "all", timeoutMs } = {}) {
-  const selectedFeeds = selectFeeds(category);
+export async function collectNews({ category = "latest", feed, timeoutMs } = {}) {
+  const selectedFeeds = feed ? [feed] : selectFeeds(category);
   const results = await Promise.allSettled(
     selectedFeeds.map(async (feed) => ({
       feed,
@@ -120,8 +120,4 @@ export function normalizeDate(value) {
   }
 
   return parsed.toISOString();
-}
-
-export function findFeed(key) {
-  return feeds.find((feed) => feed.key === key);
 }
