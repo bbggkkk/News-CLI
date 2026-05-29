@@ -1,6 +1,6 @@
 {
   "name": "news-cli",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Google News and DART RSS CLI with latest news, disclosures, and advanced search.",
   "type": "module",
   "bin": {

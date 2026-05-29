@@ -6,9 +6,9 @@ import { selfUpgrade } from "./upgrade";
 const helpText = `news-cli
 
 Usage:
-  news-cli [latest] [--limit <n>]
-  news-cli dart [--limit <n>]
-  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--limit <n>]
+  news-cli [latest] [--limit <n>] [--since-hours <n>]
+  news-cli dart [--limit <n>] [--since-hours <n>]
+  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--since-hours <n>] [--limit <n>]
   news-cli url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>]
   news-cli categories
   news-cli detail <id-or-url>
@@ -32,13 +32,15 @@ Examples:
   news-cli
   news-cli latest --limit 20
   news-cli dart --limit 20
+  news-cli latest --since-hours 3
   news-cli search 삼성전자 --limit 10
+  news-cli search 삼성전자 --since-hours 6
   news-cli search 삼성전자 --after 2026-05-01 --before 2026-05-28
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고
   news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
   news-cli detail 1a2b3c4d5e
   news-cli upgrade
-  news-cli upgrade --version v0.2.7
+  news-cli upgrade --version v0.2.8
   news-cli help search
   news-cli help upgrade
 
@@ -62,34 +64,38 @@ const commandHelp = {
   latest: `news-cli latest
 
 Usage:
-  news-cli [latest] [--limit <n>]
+  news-cli [latest] [--limit <n>] [--since-hours <n>]
 
 Fetches the Korean Google News latest RSS feed.
 
 Options:
-  --limit, -l <n>  Number of items to print. Default: 30
+  --limit, -l <n>     Number of items to print. Default: 30
+  --since-hours <n>   Only print RSS items published in the last N hours.
 
 Example:
-  news-cli latest --limit 20`,
+  news-cli latest --limit 20
+  news-cli latest --since-hours 3`,
 
   dart: `news-cli dart
 
 Usage:
-  news-cli dart [--limit <n>]
-  news-cli disclosure [--limit <n>]
+  news-cli dart [--limit <n>] [--since-hours <n>]
+  news-cli disclosure [--limit <n>] [--since-hours <n>]
 
 Fetches today's DART disclosure RSS feed.
 
 Options:
-  --limit, -l <n>  Number of disclosure items to print. Default: 30
+  --limit, -l <n>     Number of disclosure items to print. Default: 30
+  --since-hours <n>   Only print RSS items published in the last N hours.
 
 Example:
-  news-cli dart --limit 20`,
+  news-cli dart --limit 20
+  news-cli dart --since-hours 6`,
 
   search: `news-cli search
 
 Usage:
-  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--limit <n>]
+  news-cli search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--since-hours <n>] [--limit <n>]
 
 Builds a Google News RSS search query and prints matching news.
 
@@ -99,10 +105,12 @@ Options:
   --exclude <word>   Add an excluded word. Can be used multiple times.
   --after <date>     Add after:YYYY-MM-DD to the Google News query. Alias: --from
   --before <date>    Add before:YYYY-MM-DD to the Google News query. Alias: --to
+  --since-hours <n>  Only print RSS items published in the last N hours.
   --limit, -l <n>    Number of items to print. Default: 30
 
 Examples:
   news-cli search 삼성전자 --limit 10
+  news-cli search 삼성전자 --since-hours 6
   news-cli search 삼성전자 --after 2026-05-01 --before 2026-05-28
   news-cli search 선거 --site example.com --phrase "여론조사" --exclude 광고`,
 
@@ -163,7 +171,7 @@ Environment:
 
 Example:
   news-cli upgrade
-  news-cli upgrade --version v0.2.7`
+  news-cli upgrade --version v0.2.8`
 };
 
 type CliOptions = {
@@ -175,6 +183,7 @@ type CliOptions = {
   exclude: string[];
   after: string;
   before: string;
+  sinceHours: number | undefined;
   version: string;
   installDir: string;
   skillDir: string;
@@ -259,6 +268,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     exclude: [],
     after: "",
     before: "",
+    sinceHours: undefined,
     version: "latest",
     installDir: "",
     skillDir: "",
@@ -308,6 +318,10 @@ function parseArgs(argv: string[]): ParsedArgs {
       options.before = parseDateFilter(token.slice("--before=".length));
     } else if (token.startsWith("--to=")) {
       options.before = parseDateFilter(token.slice("--to=".length));
+    } else if (token === "--since-hours") {
+      options.sinceHours = parseSinceHours(requireValue(token, tokens.shift()));
+    } else if (token.startsWith("--since-hours=")) {
+      options.sinceHours = parseSinceHours(token.slice("--since-hours=".length));
     } else if (token === "--version") {
       options.version = requireValue(token, tokens.shift());
     } else if (token.startsWith("--version=")) {
@@ -392,8 +406,17 @@ function parseDateFilter(value: string): string {
   return value;
 }
 
+function parseSinceHours(value: string): number {
+  const hours = Number(value);
+  if (!Number.isFinite(hours) || hours <= 0) {
+    throw new Error(`Since-hours must be a positive number. Received "${value}".`);
+  }
+
+  return hours;
+}
+
 async function printList(options: CliOptions): Promise<void> {
-  const { items, errors } = await collectNews({ category: options.category });
+  const { items, errors } = await collectNews({ category: options.category, sinceHours: options.sinceHours });
   await printItems(items, errors, options.limit);
 }
 
@@ -406,7 +429,7 @@ async function printSearch(args: string[], options: CliOptions): Promise<void> {
     after: options.after,
     before: options.before
   });
-  const { items, errors } = await collectNews({ feed });
+  const { items, errors } = await collectNews({ feed, sinceHours: options.sinceHours });
   await printItems(items, errors, options.limit);
 }
 

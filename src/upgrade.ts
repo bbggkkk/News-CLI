@@ -161,7 +161,7 @@ async function downloadFile(
   try {
     const response = await fetch(url, {
       headers: {
-        "user-agent": "news-cli/0.2.7"
+        "user-agent": "news-cli/0.2.8"
       },
       signal: controller.signal
     });

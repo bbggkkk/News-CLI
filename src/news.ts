@@ -26,6 +26,7 @@ export type CollectNewsOptions = {
   category?: string;
   feed?: Feed;
   timeoutMs?: number;
+  sinceHours?: number;
 };
 
 export async function fetchFeed(feed: Feed, { timeoutMs = DEFAULT_TIMEOUT_MS }: { timeoutMs?: number } = {}): Promise<NewsItem[]> {
@@ -52,7 +53,7 @@ export async function fetchFeed(feed: Feed, { timeoutMs = DEFAULT_TIMEOUT_MS }: 
   }
 }
 
-export async function collectNews({ category = "latest", feed, timeoutMs }: CollectNewsOptions = {}): Promise<{ items: NewsItem[]; errors: string[] }> {
+export async function collectNews({ category = "latest", feed, timeoutMs, sinceHours }: CollectNewsOptions = {}): Promise<{ items: NewsItem[]; errors: string[] }> {
   const selectedFeeds = feed ? [feed] : selectFeeds(category);
   const results = await Promise.allSettled(
     selectedFeeds.map(async (feed) => ({
@@ -72,7 +73,7 @@ export async function collectNews({ category = "latest", feed, timeoutMs }: Coll
     }
   }
 
-  const uniqueItems = dedupeItems(items);
+  const uniqueItems = filterItemsBySinceHours(dedupeItems(items), sinceHours);
 
   uniqueItems.sort((a, b) => {
     const aTime = a.date ? new Date(a.date).getTime() : 0;
@@ -133,6 +134,18 @@ export function dedupeItems(items: NewsItem[]): NewsItem[] {
   }
 
   return [...byId.values()];
+}
+
+export function filterItemsBySinceHours(items: NewsItem[], sinceHours?: number, now = Date.now()): NewsItem[] {
+  if (!sinceHours) {
+    return items;
+  }
+
+  const cutoff = now - sinceHours * 60 * 60 * 1000;
+  return items.filter((item) => {
+    const timestamp = item.date ? new Date(item.date).getTime() : 0;
+    return Number.isFinite(timestamp) && timestamp >= cutoff;
+  });
 }
 
 export function normalizeDate(value?: string): string {

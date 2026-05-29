@@ -29,6 +29,18 @@ def _limit(value: Any, default: int = 10) -> int:
     return max(1, min(parsed, 100))
 
 
+def _positive_number(value: Any) -> str:
+    if value is None or value == "":
+        return ""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return ""
+    if parsed <= 0:
+        return ""
+    return str(int(parsed)) if parsed.is_integer() else str(parsed)
+
+
 def _string(value: Any) -> str:
     return str(value).strip() if value is not None else ""
 
@@ -112,9 +124,9 @@ def _slash_help() -> str:
 
 Usage:
   /news
-  /news latest [--limit <n>]
-  /news search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--limit <n>]
-  /news dart [--limit <n>]
+  /news latest [--limit <n>] [--since-hours <n>]
+  /news search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>] [--since-hours <n>] [--limit <n>]
+  /news dart [--limit <n>] [--since-hours <n>]
   /news detail <id-or-url>
   /news url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>]
 
@@ -136,6 +148,11 @@ NEWS_LATEST_SCHEMA = {
                 "minimum": 1,
                 "maximum": 100,
                 "default": 10,
+            },
+            "since_hours": {
+                "type": "number",
+                "description": "Only return RSS items published in the last N hours.",
+                "minimum": 0.01,
             },
         },
         "additionalProperties": False,
@@ -183,6 +200,11 @@ NEWS_SEARCH_SCHEMA = {
                 "maximum": 100,
                 "default": 10,
             },
+            "since_hours": {
+                "type": "number",
+                "description": "Only return RSS items published in the last N hours.",
+                "minimum": 0.01,
+            },
         },
         "required": ["query"],
         "additionalProperties": False,
@@ -201,6 +223,11 @@ NEWS_DART_SCHEMA = {
                 "minimum": 1,
                 "maximum": 100,
                 "default": 10,
+            },
+            "since_hours": {
+                "type": "number",
+                "description": "Only return RSS items published in the last N hours.",
+                "minimum": 0.01,
             },
         },
         "additionalProperties": False,
@@ -253,7 +280,11 @@ NEWS_SEARCH_URL_SCHEMA = {
 
 
 def _handle_latest(args, **_kwargs):
-    return _run_news_cli(["latest", "--limit", str(_limit(args.get("limit")))])
+    cli_args = ["latest", "--limit", str(_limit(args.get("limit")))]
+    since_hours = _positive_number(args.get("since_hours"))
+    if since_hours:
+        cli_args.extend(["--since-hours", since_hours])
+    return _run_news_cli(cli_args)
 
 
 def _handle_search(args, **_kwargs):
@@ -272,11 +303,18 @@ def _handle_search(args, **_kwargs):
         cli_args.extend(["--after", after])
     if before:
         cli_args.extend(["--before", before])
+    since_hours = _positive_number(args.get("since_hours"))
+    if since_hours:
+        cli_args.extend(["--since-hours", since_hours])
     return _run_news_cli(cli_args)
 
 
 def _handle_dart(args, **_kwargs):
-    return _run_news_cli(["dart", "--limit", str(_limit(args.get("limit")))])
+    cli_args = ["dart", "--limit", str(_limit(args.get("limit")))]
+    since_hours = _positive_number(args.get("since_hours"))
+    if since_hours:
+        cli_args.extend(["--since-hours", since_hours])
+    return _run_news_cli(cli_args)
 
 
 def _handle_detail(args, **_kwargs):

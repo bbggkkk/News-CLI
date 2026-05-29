@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildLatestUrl, buildSearchQuery, buildSearchUrl, selectFeeds } from "../src/feeds";
 import { parseRss, stripHtml } from "../src/xml";
-import { dedupeItems, normalizeItem } from "../src/news";
+import { dedupeItems, filterItemsBySinceHours, normalizeItem } from "../src/news";
 import { buildReleaseAssetUrl, buildSkillUrl, getAssetName, resolveSkillDirs } from "../src/upgrade";
 
 test("parseRss extracts common RSS item fields", () => {
@@ -66,6 +66,20 @@ test("dedupeItems combines categories and sources for the same story", () => {
   assert.equal(deduped[0].category, "search,latest");
   assert.deepEqual(deduped[0].categories, ["search", "latest"]);
   assert.equal(deduped[0].source, "google-search,google-latest");
+});
+
+test("filterItemsBySinceHours keeps only recent dated items", () => {
+  const now = new Date("2026-05-29T12:00:00.000Z").getTime();
+  const items = [
+    makeNewsItem({ id: "recent", date: "2026-05-29T10:30:00.000Z" }),
+    makeNewsItem({ id: "old", date: "2026-05-29T08:59:59.000Z" }),
+    makeNewsItem({ id: "undated", date: "" })
+  ];
+
+  assert.deepEqual(
+    filterItemsBySinceHours(items, 3, now).map((item) => item.id),
+    ["recent"]
+  );
 });
 
 function makeNewsItem(overrides = {}) {
@@ -138,12 +152,12 @@ test("buildSearchQuery validates date filters", () => {
 test("upgrade helpers build release asset names and urls", () => {
   assert.equal(getAssetName("linux", "x64"), "news-cli-linux-x64");
   assert.equal(
-    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.7"),
-    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.7/news-cli-linux-x64"
+    buildReleaseAssetUrl("news-cli-linux-x64", "v0.2.8"),
+    "https://github.com/bbggkkk/News-CLI/releases/download/v0.2.8/news-cli-linux-x64"
   );
   assert.equal(
-    buildSkillUrl("v0.2.7"),
-    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.7/skills/news-cli/SKILL.md"
+    buildSkillUrl("v0.2.8"),
+    "https://raw.githubusercontent.com/bbggkkk/News-CLI/v0.2.8/skills/news-cli/SKILL.md"
   );
 });
 
