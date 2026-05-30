@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 
-import { run } from "../src/cli";
-import { logError } from "../src/logger";
+import { run } from "../src/interfaces/cli/router";
+import { Logger } from "../src/lib/logger";
 
 run(process.argv.slice(2)).catch((error) => {
-	logError(error.message);
-	process.exitCode = 1;
+  const logger = new Logger({ json: process.argv.includes("--json") });
+  logger.error(error.message);
+  process.exitCode = 1;
 });
