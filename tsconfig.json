@@ -6,6 +6,10 @@
     "lib": ["ES2022", "DOM"],
     "types": ["bun-types"],
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true

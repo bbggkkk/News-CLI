@@ -18,7 +18,7 @@ from typing import Any
 PLUGIN_DIR = Path(__file__).resolve().parent
 TOOLSET = "news"
 TIMEOUT_SECONDS = 60
-SLASH_READ_COMMANDS = {"latest", "search", "dart", "disclosure", "detail", "url", "categories", "help"}
+SLASH_READ_COMMANDS = {"latest", "search", "dart", "disclosure", "detail", "url", "categories", "history", "help"}
 
 
 def _limit(value: Any, default: int = 10) -> int:
@@ -129,6 +129,7 @@ Usage:
   /news dart [--limit <n>] [--since-hours <n>]
   /news detail <id-or-url>
   /news url search <query> [--site <domain>] [--phrase <text>] [--exclude <word>] [--after <date>] [--before <date>]
+  /news history [--limit <n>]
 
 Short form:
   /news 삼성전자
@@ -278,6 +279,29 @@ NEWS_SEARCH_URL_SCHEMA = {
     },
 }
 
+NEWS_HISTORY_SCHEMA = {
+    "name": "news_history",
+    "description": "Fetch the local API call history log (NewsAPI and DART RSS requests).",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "limit": {
+                "type": "integer",
+                "description": "Maximum number of history entries to return. Default 20, max 100.",
+                "minimum": 1,
+                "maximum": 100,
+                "default": 20,
+            },
+        },
+        "additionalProperties": False,
+    },
+}
+
+
+def _handle_history(args, **_kwargs):
+    cli_args = ["history", "--limit", str(_limit(args.get("limit"), default=20))]
+    return _run_news_cli(cli_args)
+
 
 def _handle_latest(args, **_kwargs):
     cli_args = ["latest", "--limit", str(_limit(args.get("limit")))]
@@ -371,6 +395,7 @@ def register(ctx) -> None:
         ("news_dart", NEWS_DART_SCHEMA, _handle_dart),
         ("news_detail", NEWS_DETAIL_SCHEMA, _handle_detail),
         ("news_search_url", NEWS_SEARCH_URL_SCHEMA, _handle_search_url),
+        ("news_history", NEWS_HISTORY_SCHEMA, _handle_history),
     ):
         ctx.register_tool(
             name=name,
@@ -384,5 +409,5 @@ def register(ctx) -> None:
         name="news",
         handler=_handle_news_slash,
         description="Fetch Google News RSS and DART disclosures with news-cli.",
-        args_hint="[latest|search|dart|detail|url|help] ...",
+        args_hint="[latest|search|dart|detail|url|history|help] ...",
     )

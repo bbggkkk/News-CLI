@@ -1,25 +1,25 @@
 ---
 name: news-cli
-description: Use this skill when the user wants to fetch, search, inspect, install, upgrade, build, release, or troubleshoot the news-cli Google News RSS CLI.
+description: Use this skill when the user wants to fetch, search, inspect, install, upgrade, build, release, or troubleshoot the news-cli NewsAPI CLI.
 ---
 
 # news-cli
 
-`news-cli` is a Bun-built command-line Google News RSS and DART disclosure RSS client.
+`news-cli` is a Bun-built command-line NewsAPI and DART disclosure RSS client.
+Note: Requires `NEWS_API_KEY` environment variable for NewsAPI fetching.
 
-RSS forms:
+News forms:
 
-- Latest Korean Google News: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
-- Search: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
-- Advanced search query: `(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
-- Date search operators: `after:YYYY-MM-DD`, `before:YYYY-MM-DD`
+- Latest NewsAPI Headlines: `https://newsapi.org/v2/top-headlines?country=kr`
+- Search: `https://newsapi.org/v2/everything?q=(검색어)`
+- Date search parameters: `from=YYYY-MM-DD`, `to=YYYY-MM-DD`
 - DART today disclosures: `https://dart.fss.or.kr/api/todayRSS.xml`
 
 ## Command Reference
 
 ### `news-cli` / `news-cli latest`
 
-Fetches Korean Google News latest RSS.
+Fetches NewsAPI top headlines.
 
 ```sh
 news-cli
@@ -43,7 +43,7 @@ Use this for Korean corporate disclosure items from DART. Each item includes an 
 
 ### `news-cli search`
 
-Fetches Google News RSS search results.
+Fetches NewsAPI search results.
 
 ```sh
 news-cli search 삼성전자 --limit 10
@@ -64,14 +64,14 @@ Options:
 
 ### `news-cli url search`
 
-Prints the generated query and RSS URL without fetching.
+Prints the generated query and URL without fetching.
 
 ```sh
 news-cli url search 반도체 --site mk.co.kr --phrase "실적 전망" --exclude 루머
 news-cli url search 삼성전자 --after 2026-05-01 --before 2026-05-28
 ```
 
-Use this when validating a Google News RSS expression before using it for polling or automation.
+Use this when validating a NewsAPI expression before using it for polling or automation.
 
 ### `news-cli detail`
 
@@ -91,7 +91,7 @@ Shows fixed feeds and supported modes.
 news-cli categories
 ```
 
-Current fixed feed is `google-latest`; search feeds are created dynamically from CLI options.
+Current fixed feed is `newsapi-latest`; search feeds are created dynamically from CLI options.
 
 ### `news-cli help`
 
@@ -194,11 +194,11 @@ Use `/news` inside a Hermes session:
 
 The plugin registers:
 
-- `news_latest`: fetch Korean Google News latest RSS.
-- `news_search`: search Google News RSS with query, site, phrase, exclude, date filters, and fetched-item hour filtering.
+- `news_latest`: fetch NewsAPI top headlines.
+- `news_search`: search NewsAPI with query, site, phrase, exclude, date filters, and fetched-item hour filtering.
 - `news_dart`: fetch today's DART disclosure RSS.
 - `news_detail`: inspect a cached item by ID or URL.
-- `news_search_url`: build a Google News RSS search URL without fetching.
+- `news_search_url`: build a NewsAPI search URL without fetching.
 
 ## Development
 

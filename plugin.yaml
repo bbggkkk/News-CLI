@@ -1,6 +1,6 @@
 name: news-cli
 version: 0.2.8
-description: "Google News RSS and DART disclosure RSS tools backed by the Bun-built news-cli binary."
+description: "NewsAPI and DART disclosure RSS tools backed by the Bun-built news-cli binary. Requires NEWS_API_KEY environment variable."
 author: bbggkkk
 kind: standalone
 platforms:

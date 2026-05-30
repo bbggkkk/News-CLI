@@ -1,14 +1,14 @@
 # news-cli
 
-Google News RSS와 DART 공시 RSS를 터미널에서 조회하는 Bun 기반 CLI입니다. 최신뉴스,
+NewsAPI와 DART 공시 RSS를 터미널에서 조회하는 Bun 기반 CLI입니다. 최신뉴스,
 키워드 검색, 사이트 제한, 정확한 문구, 제외어 조합 검색, 오늘의 DART 공시 조회를 지원합니다.
 
-참고한 Google News RSS 형식:
+참고한 NewsAPI 형식:
 
-- 최신뉴스: `https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko`
-- 검색: `https://news.google.com/rss/search?q=(검색어)&hl=ko&gl=KR&ceid=KR%3Ako`
-- 고급 검색: `q=(검색어) site:(사이트 주소) "(정확한 문구)" -(제외할 단어)`
-- 날짜 검색: `after:YYYY-MM-DD`, `before:YYYY-MM-DD`
+- 최신뉴스: `https://newsapi.org/v2/top-headlines?country=kr`
+- 검색: `https://newsapi.org/v2/everything?q=(검색어)`
+- 날짜 검색: `from=YYYY-MM-DD`, `to=YYYY-MM-DD`
+- 주의: NewsAPI 사용을 위해 `NEWS_API_KEY` 환경 변수가 필요합니다.
 - DART 공시: `https://dart.fss.or.kr/api/todayRSS.xml`
 
 ## 설치 없이 실행
@@ -73,11 +73,11 @@ hermes gateway restart
 
 제공 tool:
 
-- `news_latest`: 한국 Google News 최신뉴스 RSS 조회
-- `news_search`: Google News RSS 키워드/사이트/정확한 문구/제외어/날짜/최근 N시간 검색
+- `news_latest`: NewsAPI 주요 뉴스(top-headlines) 조회
+- `news_search`: NewsAPI 키워드/사이트/정확한 문구/제외어/날짜/최근 N시간 검색
 - `news_dart`: 오늘의 DART 공시 RSS 조회
 - `news_detail`: 이전 조회 결과의 ID 또는 URL 상세 조회
-- `news_search_url`: Google News RSS 검색 URL 생성
+- `news_search_url`: NewsAPI 검색 URL 생성
 
 ## 사용법
 
@@ -102,7 +102,7 @@ news-cli help search
 - `news-cli help latest`: 최신뉴스 조회 도움말을 출력합니다.
 - `news-cli help dart`: DART 공시 조회 도움말을 출력합니다.
 - `news-cli help search`: 검색과 고급 검색 옵션 도움말을 출력합니다.
-- `news-cli help url`: Google News RSS URL 생성 도움말을 출력합니다.
+- `news-cli help url`: NewsAPI URL 생성 도움말을 출력합니다.
 - `news-cli help detail`: 캐시 기반 상세 조회 도움말을 출력합니다.
 - `news-cli help upgrade`: 업그레이드 도움말을 출력합니다.
 
