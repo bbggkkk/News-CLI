@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from "bun:test";
-import { run } from "../src/cli";
+import { run } from "../src/interfaces/cli/router";
 
 // ─────────────────────────────────────────────
 // Shared test infrastructure

@@ -1,9 +1,9 @@
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { VERSION } from "./lib/version";
 import { getEnv } from "./providers/config";
 import { validateUrl } from "./providers/http";
-import { VERSION } from "./lib/version";
 
 const REPO = "bbggkkk/News-CLI";
 

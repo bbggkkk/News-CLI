@@ -95,7 +95,12 @@ describe("parseArgs", () => {
 	});
 
 	test("parses --phrase", () => {
-		const { options } = parseArgs(["search", "test", "--phrase", "exact phrase"]);
+		const { options } = parseArgs([
+			"search",
+			"test",
+			"--phrase",
+			"exact phrase",
+		]);
 		expect(options.phrase).toBe("exact phrase");
 	});
 });

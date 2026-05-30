@@ -20,8 +20,8 @@ type AppErrorOptions = {
 export class AppError extends Error {
 	readonly code: ErrorCode;
 	readonly userMessage: string;
-	readonly statusCode?: number;
-	readonly retryAfterMs?: number;
+	readonly statusCode: number | undefined;
+	readonly retryAfterMs: number | undefined;
 
 	constructor(
 		code: ErrorCode,
